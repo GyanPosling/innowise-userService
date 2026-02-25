@@ -19,7 +19,7 @@
 		<mapstruct.version>1.5.5.Final</mapstruct.version>
 		<lombok.version>1.18.30</lombok.version>
 		<sonar.organization>gyanposling</sonar.organization>
-		<sonar.projectKey>GyanPosling_Internship</sonar.projectKey>
+		<sonar.projectKey>GyanPosling_innowise-userService</sonar.projectKey>
 		<sonar.host.url>https://sonarcloud.io</sonar.host.url>
 		<sonar.branch.name>develop2</sonar.branch.name>
 		<sonar.exclusions>**/dto/**,**/model/**,**/config/**,**/*Application.java,**/exception/**, **/mapper/**, **/repository/**, **/security/**</sonar.exclusions>
