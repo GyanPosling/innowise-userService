@@ -39,6 +39,9 @@ jobs:
           -Dsonar.projectKey=GyanPosling_innowise-userService
           -Dsonar.organization=gyanposling
           -Dsonar.host.url=https://sonarcloud.io
+          -Dsonar.pullrequest.key=${{ github.event.pull_request.number }}
+          -Dsonar.pullrequest.branch=${{ github.head_ref }}
+          -Dsonar.pullrequest.base=${{ github.base_ref }}
 
   docker-image:
     runs-on: ubuntu-latest
