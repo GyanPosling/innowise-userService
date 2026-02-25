@@ -1,4 +1,4 @@
-package com.innowise.userService.model.dto;
+package com.innowise.userservice.model.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Future;

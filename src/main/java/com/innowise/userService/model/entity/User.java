@@ -1,4 +1,4 @@
-package com.innowise.userService.model.entity;
+package com.innowise.userservice.model.entity;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;

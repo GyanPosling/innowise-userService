@@ -1,4 +1,4 @@
-package com.innowise.userService.config;
+package com.innowise.userservice.config;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.ObjectMapper;

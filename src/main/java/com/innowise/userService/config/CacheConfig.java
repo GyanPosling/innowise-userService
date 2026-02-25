@@ -1,4 +1,4 @@
-package com.innowise.userService.config;
+package com.innowise.userservice.config;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.cache.CacheManager;

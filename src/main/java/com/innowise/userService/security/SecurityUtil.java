@@ -1,7 +1,7 @@
-package com.innowise.userService.security;
+package com.innowise.userservice.security;
 
-import com.innowise.userService.exception.ResourceNotFoundException;
-import com.innowise.userService.repository.PaymentCardRepository;
+import com.innowise.userservice.exception.ResourceNotFoundException;
+import com.innowise.userservice.repository.PaymentCardRepository;
 import java.util.Objects;
 import java.util.Collection;
 import lombok.RequiredArgsConstructor;

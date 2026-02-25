@@ -1,4 +1,4 @@
-package com.innowise.userService.exception;
+package com.innowise.userservice.exception;
 
 public class ValidationException extends RuntimeException {
     public ValidationException(String message) {

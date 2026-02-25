@@ -1,4 +1,4 @@
-package com.innowise.userService.exception;
+package com.innowise.userservice.exception;
 
 public class ResourceNotFoundException extends RuntimeException {
     public ResourceNotFoundException(String message) {

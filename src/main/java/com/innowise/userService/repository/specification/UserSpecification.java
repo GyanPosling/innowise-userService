@@ -1,6 +1,6 @@
-package com.innowise.userService.repository.specification;
+package com.innowise.userservice.repository.specification;
 
-import com.innowise.userService.model.entity.User;
+import com.innowise.userservice.model.entity.User;
 import org.springframework.data.jpa.domain.Specification;
 
 public interface UserSpecification {

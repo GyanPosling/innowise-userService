@@ -1,6 +1,6 @@
-package com.innowise.userService.repository.specification;
+package com.innowise.userservice.repository.specification;
 
-import com.innowise.userService.model.entity.PaymentCard;
+import com.innowise.userservice.model.entity.PaymentCard;
 import org.springframework.data.jpa.domain.Specification;
 
 public interface PaymentCardSpecification {

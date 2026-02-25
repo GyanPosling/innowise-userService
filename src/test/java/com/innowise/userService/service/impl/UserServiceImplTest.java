@@ -1,12 +1,12 @@
-package com.innowise.userService.service.impl;
+package com.innowise.userservice.service.impl;
 
-import com.innowise.userService.exception.ResourceNotFoundException;
-import com.innowise.userService.exception.ValidationException;
-import com.innowise.userService.mapper.UserMapper;
-import com.innowise.userService.model.dto.UserDto;
-import com.innowise.userService.model.entity.User;
-import com.innowise.userService.repository.UserRepository;
-import com.innowise.userService.repository.specification.UserSpecification;
+import com.innowise.userservice.exception.ResourceNotFoundException;
+import com.innowise.userservice.exception.ValidationException;
+import com.innowise.userservice.mapper.UserMapper;
+import com.innowise.userservice.model.dto.UserDto;
+import com.innowise.userservice.model.entity.User;
+import com.innowise.userservice.repository.UserRepository;
+import com.innowise.userservice.repository.specification.UserSpecification;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

@@ -1,4 +1,4 @@
-package com.innowise.userService.security;
+package com.innowise.userservice.security;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

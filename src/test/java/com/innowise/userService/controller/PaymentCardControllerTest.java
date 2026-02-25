@@ -1,11 +1,11 @@
-package com.innowise.userService.controller;
+package com.innowise.userservice.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.innowise.userService.AbstractIntegrationTest;
-import com.innowise.userService.model.dto.PaymentCardDto;
-import com.innowise.userService.model.dto.UserDto;
-import com.innowise.userService.repository.PaymentCardRepository;
-import com.innowise.userService.repository.UserRepository;
+import com.innowise.userservice.AbstractIntegrationTest;
+import com.innowise.userservice.model.dto.PaymentCardDto;
+import com.innowise.userservice.model.dto.UserDto;
+import com.innowise.userservice.repository.PaymentCardRepository;
+import com.innowise.userservice.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

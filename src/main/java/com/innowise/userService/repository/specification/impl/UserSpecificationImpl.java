@@ -1,7 +1,7 @@
-package com.innowise.userService.repository.specification.impl;
+package com.innowise.userservice.repository.specification.impl;
 
-import com.innowise.userService.model.entity.User;
-import com.innowise.userService.repository.specification.UserSpecification;
+import com.innowise.userservice.model.entity.User;
+import com.innowise.userservice.repository.specification.UserSpecification;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
 

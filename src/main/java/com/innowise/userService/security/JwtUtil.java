@@ -1,4 +1,4 @@
-package com.innowise.userService.security;
+package com.innowise.userservice.security;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;

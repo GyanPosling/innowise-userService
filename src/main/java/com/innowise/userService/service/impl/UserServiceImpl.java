@@ -1,13 +1,13 @@
-package com.innowise.userService.service.impl;
+package com.innowise.userservice.service.impl;
 
-import com.innowise.userService.exception.ResourceNotFoundException;
-import com.innowise.userService.exception.ValidationException;
-import com.innowise.userService.mapper.UserMapper;
-import com.innowise.userService.model.dto.UserDto;
-import com.innowise.userService.model.entity.User;
-import com.innowise.userService.repository.UserRepository;
-import com.innowise.userService.repository.specification.UserSpecification;
-import com.innowise.userService.service.UserService;
+import com.innowise.userservice.exception.ResourceNotFoundException;
+import com.innowise.userservice.exception.ValidationException;
+import com.innowise.userservice.mapper.UserMapper;
+import com.innowise.userservice.model.dto.UserDto;
+import com.innowise.userservice.model.entity.User;
+import com.innowise.userservice.repository.UserRepository;
+import com.innowise.userservice.repository.specification.UserSpecification;
+import com.innowise.userservice.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
@@ -23,11 +23,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class UserServiceImpl implements UserService {
+
+    private static final String USER_NOT_FOUND_MESSAGE = "User not found with id: ";
 
     private final UserRepository userRepository;
     private final UserSpecification userSpecification;
@@ -51,7 +52,7 @@ public class UserServiceImpl implements UserService {
     @Cacheable(value = "users", key = "#id", unless = "#result == null")
     public UserDto getUserById(Integer id) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(USER_NOT_FOUND_MESSAGE + id));
         return userMapper.toDTO(user);
     }
 
@@ -72,7 +73,7 @@ public class UserServiceImpl implements UserService {
         List<User> users = userRepository.findAllByEmailIn(emails);
         return users.stream()
                 .map(userMapper::toDTO)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
@@ -100,7 +101,7 @@ public class UserServiceImpl implements UserService {
     )
     public UserDto updateUser(Integer id, UserDto userDTO) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(USER_NOT_FOUND_MESSAGE + id));
         String newEmail = userDTO.getEmail();
         if (newEmail != null && !newEmail.equals(user.getEmail())
                 && userRepository.findByEmail(newEmail).isPresent()) {
@@ -125,7 +126,7 @@ public class UserServiceImpl implements UserService {
     )
     public UserDto toggleUserStatus(Integer id) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(USER_NOT_FOUND_MESSAGE + id));
         boolean newStatus = !user.isActive();
         user.setActive(newStatus);
         User updatedUser = userRepository.save(user);
@@ -136,7 +137,7 @@ public class UserServiceImpl implements UserService {
     @Cacheable(value = "userCards", key = "#userId", unless = "#result == 0")
     public int getActiveCardCount(Integer userId) {
         if (!userRepository.existsById(userId)) {
-            throw new ResourceNotFoundException("User not found with id: " + userId);
+            throw new ResourceNotFoundException(USER_NOT_FOUND_MESSAGE + userId);
         }
         return userRepository.getActiveCardCount(userId);
     }
@@ -144,8 +145,8 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public void deleteUser(Integer id) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+        userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException(USER_NOT_FOUND_MESSAGE + id));
         userRepository.deleteById(id);
         evictUserCaches(id);
     }

@@ -1,4 +1,4 @@
-package com.innowise.userService;
+package com.innowise.userservice;
 
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;

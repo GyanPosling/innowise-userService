@@ -1,4 +1,4 @@
-package com.innowise.userService.exception;
+package com.innowise.userservice.exception;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

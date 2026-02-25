@@ -1,17 +1,17 @@
-package com.innowise.userService.service.impl;
+package com.innowise.userservice.service.impl;
 
-import com.innowise.userService.exception.LimitExceededException;
-import com.innowise.userService.exception.ResourceNotFoundException;
-import com.innowise.userService.exception.ValidationException;
-import com.innowise.userService.mapper.PaymentCardMapper;
-import com.innowise.userService.mapper.UserMapper;
-import com.innowise.userService.model.dto.PaymentCardDto;
-import com.innowise.userService.model.entity.PaymentCard;
-import com.innowise.userService.model.entity.User;
-import com.innowise.userService.repository.PaymentCardRepository;
-import com.innowise.userService.repository.specification.PaymentCardSpecification;
-import com.innowise.userService.service.PaymentCardService;
-import com.innowise.userService.service.UserService;
+import com.innowise.userservice.exception.LimitExceededException;
+import com.innowise.userservice.exception.ResourceNotFoundException;
+import com.innowise.userservice.exception.ValidationException;
+import com.innowise.userservice.mapper.PaymentCardMapper;
+import com.innowise.userservice.mapper.UserMapper;
+import com.innowise.userservice.model.dto.PaymentCardDto;
+import com.innowise.userservice.model.entity.PaymentCard;
+import com.innowise.userservice.model.entity.User;
+import com.innowise.userservice.repository.PaymentCardRepository;
+import com.innowise.userservice.repository.specification.PaymentCardSpecification;
+import com.innowise.userservice.service.PaymentCardService;
+import com.innowise.userservice.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
@@ -25,12 +25,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Transactional(readOnly = true)
 @Service
 @RequiredArgsConstructor
 public class PaymentCardServiceImpl implements PaymentCardService {
+
+    private static final String CARD_NOT_FOUND_MESSAGE = "Card not found with id: ";
 
     private final PaymentCardRepository paymentCardRepository;
     private final UserService userService;
@@ -69,7 +70,7 @@ public class PaymentCardServiceImpl implements PaymentCardService {
     @Cacheable(value = "cards", key = "#id", unless = "#result == null")
     public PaymentCardDto getCardById(Integer id) {
         PaymentCard card = paymentCardRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Card not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(CARD_NOT_FOUND_MESSAGE + id));
         return paymentCardMapper.toDTO(card);
     }
 
@@ -92,7 +93,7 @@ public class PaymentCardServiceImpl implements PaymentCardService {
         List<PaymentCard> cards = paymentCardRepository.findByUserId(userId);
         return cards.stream()
                 .map(paymentCardMapper::toDTO)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
@@ -107,7 +108,7 @@ public class PaymentCardServiceImpl implements PaymentCardService {
     )
     public PaymentCardDto updateCard(Integer id, PaymentCardDto paymentCardDTO) {
         PaymentCard card = paymentCardRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Card not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(CARD_NOT_FOUND_MESSAGE + id));
 
         card.setNumber(paymentCardDTO.getNumber());
         card.setHolder(paymentCardDTO.getHolder());
@@ -129,7 +130,7 @@ public class PaymentCardServiceImpl implements PaymentCardService {
     )
     public PaymentCardDto toggleCardStatus(Integer id) {
         PaymentCard card = paymentCardRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Card not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(CARD_NOT_FOUND_MESSAGE + id));
         boolean newStatus = !card.isActive();
         card.setActive(newStatus);
         PaymentCard updatedCard = paymentCardRepository.save(card);
@@ -140,7 +141,7 @@ public class PaymentCardServiceImpl implements PaymentCardService {
     @Transactional
     public void deleteCard(Integer id) {
         Integer userId = paymentCardRepository.findUserIdByCardId(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Card not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(CARD_NOT_FOUND_MESSAGE + id));
         paymentCardRepository.deleteById(id);
         evictCardCaches(id, userId);
     }

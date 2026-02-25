@@ -1,7 +1,7 @@
-package com.innowise.userService.mapper;
+package com.innowise.userservice.mapper;
 
-import com.innowise.userService.model.dto.UserDto;
-import com.innowise.userService.model.entity.User;
+import com.innowise.userservice.model.dto.UserDto;
+import com.innowise.userservice.model.entity.User;
 import org.mapstruct.Mapper;
 
 @Mapper(componentModel = "spring")

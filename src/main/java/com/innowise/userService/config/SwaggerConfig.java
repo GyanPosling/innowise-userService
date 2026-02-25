@@ -1,4 +1,4 @@
-package com.innowise.userService.config;
+package com.innowise.userservice.config;
 
 import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
 import io.swagger.v3.oas.annotations.security.SecurityScheme;
