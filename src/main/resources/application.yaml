@@ -1,0 +1,6 @@
+spring:
+  application:
+    name: userservice
+
+jwt:
+  secret: ${JWT_SECRET}

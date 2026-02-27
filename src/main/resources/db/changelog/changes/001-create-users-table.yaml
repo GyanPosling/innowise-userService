@@ -1,0 +1,68 @@
+databaseChangeLog:
+  - changeSet:
+      id: 001-create-users-table
+      author: bursh
+      changes:
+        - createTable:
+            tableName: users
+            remarks: "System users"
+            columns:
+              - column:
+                  name: id
+                  type: INTEGER
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMPTZ
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMPTZ
+                  defaultValueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: name
+                  type: TEXT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: surname
+                  type: TEXT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: birth_date
+                  type: DATE
+              - column:
+                  name: email
+                  type: TEXT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: active
+                  type: BOOLEAN
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+
+        - sql:
+            dbms: postgresql
+            sql: ALTER TABLE users ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY;
+
+        - createIndex:
+            indexName: idx_users_email
+            tableName: users
+            unique: true
+            columns:
+              - column:
+                  name: email
+
+        - createIndex:
+            indexName: idx_users_active
+            tableName: users
+            columns:
+              - column:
+                  name: active
