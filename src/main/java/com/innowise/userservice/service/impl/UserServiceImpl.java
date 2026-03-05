@@ -3,6 +3,7 @@ package com.innowise.userservice.service.impl;
 import com.innowise.userservice.exception.ResourceNotFoundException;
 import com.innowise.userservice.exception.ValidationException;
 import com.innowise.userservice.mapper.UserMapper;
+import com.innowise.userservice.model.dto.InternalUserCreateRequest;
 import com.innowise.userservice.model.dto.UserDto;
 import com.innowise.userservice.model.entity.User;
 import com.innowise.userservice.repository.UserRepository;
@@ -37,13 +38,24 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    @CacheEvict(value = "users", allEntries = true)
-    public UserDto createUser(UserDto userDTO) {
-        if (userRepository.findByEmail(userDTO.getEmail()).isPresent()) {
+    @Caching(
+            put = {
+                    @CachePut(value = "users", key = "#result.id"),
+                    @CachePut(value = "usersByEmail", key = "#result.email")
+            },
+            evict = @CacheEvict(value = "usersPage", allEntries = true)
+    )
+    public UserDto createInternalUser(InternalUserCreateRequest request) {
+        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
             throw new ValidationException("User with this email already exists");
         }
-        User user = userMapper.toEntity(userDTO);
-        user.setActive(true);
+        User user = User.builder()
+                .name(request.getName())
+                .surname(request.getSurname())
+                .birthDate(request.getBirthDate())
+                .email(request.getEmail())
+                .active(true)
+                .build();
         User savedUser = userRepository.save(user);
         return userMapper.toDTO(savedUser);
     }
@@ -149,6 +161,22 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new ResourceNotFoundException(USER_NOT_FOUND_MESSAGE + id));
         userRepository.deleteById(id);
         evictUserCaches(id);
+    }
+
+    @Override
+    @Transactional
+    public void linkAuthUserId(Integer userId, Long authUserId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException(USER_NOT_FOUND_MESSAGE + userId));
+        user.setAuthUserId(authUserId);
+        userRepository.save(user);
+        evictUserCaches(userId);
+    }
+
+    @Override
+    @Transactional
+    public void deleteInternalUser(Integer userId) {
+        deleteUser(userId);
     }
 
     private void evictUserCaches(Integer userId) {

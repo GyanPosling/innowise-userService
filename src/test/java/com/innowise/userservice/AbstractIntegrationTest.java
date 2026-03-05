@@ -1,11 +1,6 @@
 package com.innowise.userservice;
 
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
-import java.nio.charset.StandardCharsets;
-import java.time.Instant;
-import java.util.Date;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -21,10 +16,12 @@ import org.testcontainers.utility.DockerImageName;
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 public abstract class AbstractIntegrationTest {
 
-    protected static final String AUTH_HEADER = "Authorization";
-
-    @Value("${jwt.secret}")
-    private String jwtSecret;
+    protected static final String USER_ID_HEADER = "X-USER-ID";
+    protected static final String USER_ROLE_HEADER = "X-USER-ROLE";
+    protected static final String USER_EMAIL_HEADER = "X-USER-EMAIL";
+    protected static final String USERNAME_HEADER = "X-USER-NAME";
+    protected static final String INTERNAL_SECRET_HEADER = "X-Internal-Secret";
+    protected static final String INTERNAL_SECRET = "test-internal-secret";
 
     @Container
     static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:15-alpine")
@@ -48,26 +45,29 @@ public abstract class AbstractIntegrationTest {
         registry.add("app.cache.enabled", () -> "false");
         registry.add("spring.flyway.enabled", () -> "false");
         registry.add("spring.jpa.hibernate.ddl-auto", () -> "create-drop");
+        registry.add("internal.secret", () -> INTERNAL_SECRET);
     }
 
-    protected String adminAuthHeader() {
-        return "Bearer " + buildToken(999L, "admin@example.com", "ADMIN");
+    protected HttpHeaders adminHeaders() {
+        return buildHeaders(999L, "admin@example.com", "ADMIN");
     }
 
-    protected String userAuthHeader(Long userId, String email) {
-        return "Bearer " + buildToken(userId, email, "USER");
+    protected HttpHeaders userHeaders(Long userId, String email) {
+        return buildHeaders(userId, email, "USER");
     }
 
-    private String buildToken(Long userId, String email, String role) {
-        Instant now = Instant.now();
-        return Jwts.builder()
-                .setSubject(email)
-                .claim("email", email)
-                .claim("userId", userId)
-                .claim("role", role)
-                .setIssuedAt(Date.from(now))
-                .setExpiration(Date.from(now.plusSeconds(3600)))
-                .signWith(Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8)))
-                .compact();
+    protected HttpHeaders internalHeaders() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.add(INTERNAL_SECRET_HEADER, INTERNAL_SECRET);
+        return headers;
+    }
+
+    private HttpHeaders buildHeaders(Long userId, String email, String role) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.add(USER_ID_HEADER, String.valueOf(userId));
+        headers.add(USER_ROLE_HEADER, role);
+        headers.add(USER_EMAIL_HEADER, email);
+        headers.add(USERNAME_HEADER, email);
+        return headers;
     }
 }

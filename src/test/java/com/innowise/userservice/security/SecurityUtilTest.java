@@ -2,8 +2,6 @@ package com.innowise.userservice.security;
 
 import com.innowise.userservice.exception.ResourceNotFoundException;
 import com.innowise.userservice.repository.PaymentCardRepository;
-import java.util.Collection;
-import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -12,16 +10,13 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.authentication.TestingAuthenticationToken;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -29,13 +24,7 @@ import static org.mockito.Mockito.when;
 class SecurityUtilTest {
 
     @Mock
-    private JwtUtil jwtUtil;
-
-    @Mock
     private PaymentCardRepository paymentCardRepository;
-
-    @Mock
-    private Authentication authentication;
 
     @InjectMocks
     private SecurityUtil securityUtil;
@@ -56,10 +45,15 @@ class SecurityUtilTest {
     }
 
     @Test
-    void getAuthenticatedUserId_InvalidToken_ThrowsException() {
+    void getAuthenticatedUserId_InvalidDetails_ThrowsException() {
+        TestingAuthenticationToken authentication = new TestingAuthenticationToken(
+                "user",
+                "password",
+                "ROLE_USER"
+        );
+        authentication.setAuthenticated(true);
+        authentication.setDetails(12345);
         SecurityContextHolder.getContext().setAuthentication(authentication);
-        when(authentication.isAuthenticated()).thenReturn(true);
-        when(authentication.getCredentials()).thenReturn(12345);
 
         AccessDeniedException exception = assertThrows(AccessDeniedException.class,
                 () -> securityUtil.getAuthenticatedUserId());
@@ -69,35 +63,43 @@ class SecurityUtilTest {
 
     @Test
     void getAuthenticatedUserId_Success() {
+        TestingAuthenticationToken authentication = new TestingAuthenticationToken(
+                "user",
+                "password",
+                "ROLE_USER"
+        );
+        authentication.setAuthenticated(true);
+        authentication.setDetails("42");
         SecurityContextHolder.getContext().setAuthentication(authentication);
-        when(authentication.isAuthenticated()).thenReturn(true);
-        when(authentication.getCredentials()).thenReturn("token");
-        when(jwtUtil.extractUserId("token")).thenReturn(42L);
 
         Long result = securityUtil.getAuthenticatedUserId();
 
         assertEquals(42L, result);
-        verify(jwtUtil).extractUserId("token");
     }
 
     @Test
     void checkOwnership_AdminBypassesOwnership() {
+        TestingAuthenticationToken authentication = new TestingAuthenticationToken(
+                "admin",
+                "password",
+                "ROLE_ADMIN"
+        );
+        authentication.setAuthenticated(true);
         SecurityContextHolder.getContext().setAuthentication(authentication);
-        when(authentication.isAuthenticated()).thenReturn(true);
-        doReturn(authorities("ROLE_ADMIN")).when(authentication).getAuthorities();
 
         securityUtil.checkOwnership(99L);
-
-        verify(jwtUtil, never()).extractUserId("token");
     }
 
     @Test
     void checkOwnership_NotOwner_ThrowsException() {
+        TestingAuthenticationToken authentication = new TestingAuthenticationToken(
+                "user",
+                "password",
+                "ROLE_USER"
+        );
+        authentication.setAuthenticated(true);
+        authentication.setDetails("10");
         SecurityContextHolder.getContext().setAuthentication(authentication);
-        when(authentication.isAuthenticated()).thenReturn(true);
-        doReturn(authorities("ROLE_USER")).when(authentication).getAuthorities();
-        when(authentication.getCredentials()).thenReturn("token");
-        when(jwtUtil.extractUserId("token")).thenReturn(10L);
 
         AccessDeniedException exception = assertThrows(AccessDeniedException.class,
                 () -> securityUtil.checkOwnership(11L));
@@ -107,9 +109,13 @@ class SecurityUtilTest {
 
     @Test
     void isCardOwner_Admin_ReturnsTrue() {
+        TestingAuthenticationToken authentication = new TestingAuthenticationToken(
+                "admin",
+                "password",
+                "ROLE_ADMIN"
+        );
+        authentication.setAuthenticated(true);
         SecurityContextHolder.getContext().setAuthentication(authentication);
-        when(authentication.isAuthenticated()).thenReturn(true);
-        doReturn(authorities("ROLE_ADMIN")).when(authentication).getAuthorities();
 
         boolean result = securityUtil.isCardOwner(1);
 
@@ -119,12 +125,15 @@ class SecurityUtilTest {
 
     @Test
     void isCardOwner_UserOwnsCard_ReturnsTrue() {
+        TestingAuthenticationToken authentication = new TestingAuthenticationToken(
+                "user",
+                "password",
+                "ROLE_USER"
+        );
+        authentication.setAuthenticated(true);
+        authentication.setDetails("10");
         SecurityContextHolder.getContext().setAuthentication(authentication);
-        when(authentication.isAuthenticated()).thenReturn(true);
-        doReturn(authorities("ROLE_USER")).when(authentication).getAuthorities();
         when(paymentCardRepository.findUserIdByCardId(1)).thenReturn(Optional.of(10));
-        when(authentication.getCredentials()).thenReturn("token");
-        when(jwtUtil.extractUserId("token")).thenReturn(10L);
 
         boolean result = securityUtil.isCardOwner(1);
 
@@ -134,9 +143,14 @@ class SecurityUtilTest {
 
     @Test
     void isCardOwner_CardNotFound_ThrowsException() {
+        TestingAuthenticationToken authentication = new TestingAuthenticationToken(
+                "user",
+                "password",
+                "ROLE_USER"
+        );
+        authentication.setAuthenticated(true);
+        authentication.setDetails("10");
         SecurityContextHolder.getContext().setAuthentication(authentication);
-        when(authentication.isAuthenticated()).thenReturn(true);
-        doReturn(authorities("ROLE_USER")).when(authentication).getAuthorities();
         when(paymentCardRepository.findUserIdByCardId(1)).thenReturn(Optional.empty());
 
         ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class,
@@ -145,7 +159,4 @@ class SecurityUtilTest {
         assertTrue(exception.getMessage().contains("Card not found"));
     }
 
-    private static Collection<? extends GrantedAuthority> authorities(String role) {
-        return List.of(new SimpleGrantedAuthority(role));
-    }
 }

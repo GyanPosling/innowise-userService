@@ -2,8 +2,8 @@ package com.innowise.userservice.security;
 
 import com.innowise.userservice.exception.ResourceNotFoundException;
 import com.innowise.userservice.repository.PaymentCardRepository;
-import java.util.Objects;
 import java.util.Collection;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
@@ -15,7 +15,6 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class SecurityUtil {
 
-    private final JwtUtil jwtUtil;
     private final PaymentCardRepository paymentCardRepository;
 
     public Long getAuthenticatedUserId() {
@@ -24,12 +23,14 @@ public class SecurityUtil {
             throw new AccessDeniedException("Unauthenticated access attempt");
         }
 
-        Object credentials = authentication.getCredentials();
-        if (!(credentials instanceof String token)) {
-            throw new AccessDeniedException("Invalid security context: missing token");
+        Object details = authentication.getDetails();
+        if (details instanceof String stringId) {
+            return Long.parseLong(stringId);
         }
-
-        return jwtUtil.extractUserId(token);
+        if (!(details instanceof Long userId)) {
+            throw new AccessDeniedException("Invalid security context: missing user id");
+        }
+        return userId;
     }
 
     public void checkOwnership(Long resourceOwnerId) {
