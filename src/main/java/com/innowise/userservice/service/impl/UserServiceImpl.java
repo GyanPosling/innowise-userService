@@ -21,6 +21,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.beans.factory.ObjectProvider;
 
 import java.util.Collection;
 import java.util.List;
@@ -35,6 +36,7 @@ public class UserServiceImpl implements UserService {
     private final UserSpecification userSpecification;
     private final UserMapper userMapper;
     private final CacheManager cacheManager;
+    private final ObjectProvider<UserService> userServiceProvider;
 
     @Override
     @Transactional
@@ -176,7 +178,7 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public void deleteInternalUser(Integer userId) {
-        deleteUser(userId);
+        userServiceProvider.getObject().deleteUser(userId);
     }
 
     private void evictUserCaches(Integer userId) {
