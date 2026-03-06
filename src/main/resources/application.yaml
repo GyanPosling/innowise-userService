@@ -4,3 +4,9 @@ spring:
 
 jwt:
   secret: ${JWT_SECRET}
+
+userservice:
+  internal-endpoint-secret: ${USERSERVICE_INTERNAL_ENDPOINT_SECRET}
+
+internal:
+  ttl-seconds: ${INTERNAL_TTL_SECONDS:60}

@@ -7,7 +7,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import io.swagger.v3.oas.annotations.Operation;
@@ -40,22 +39,6 @@ public class UserController {
     private final UserService userService;
     private final SecurityUtil securityUtil;
 
-
-    @Operation(summary = "Create a new user")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "User created",
-                    content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = UserDto.class))),
-            @ApiResponse(responseCode = "400", description = "Invalid input"),
-            @ApiResponse(responseCode = "409", description = "Email already exists")
-    })
-    @PostMapping
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<UserDto> createUser(@Valid @RequestBody UserDto userDTO) {
-        userDTO.setAuthUserId(securityUtil.getAuthenticatedUserId());
-        UserDto createdUser = userService.createUser(userDTO);
-        return new ResponseEntity<>(createdUser, HttpStatus.CREATED);
-    }
 
     @Operation(summary = "Get user by ID")
     @ApiResponses(value = {

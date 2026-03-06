@@ -78,29 +78,6 @@ class UserServiceImplTest {
     }
 
     @Test
-    void createUser_Success() {
-        when(userRepository.findByEmail(userDto.getEmail())).thenReturn(Optional.empty());
-        when(userMapper.toEntity(userDto)).thenReturn(user);
-        when(userRepository.save(user)).thenReturn(user);
-        when(userMapper.toDTO(user)).thenReturn(userDto);
-
-        UserDto result = userService.createUser(userDto);
-
-        assertNotNull(result);
-        assertEquals(userDto.getEmail(), result.getEmail());
-        verify(userRepository).save(user);
-    }
-
-    @Test
-    void createUser_EmailAlreadyExists_ThrowsException() {
-        when(userRepository.findByEmail(userDto.getEmail())).thenReturn(Optional.of(user));
-
-        ValidationException exception = assertThrows(ValidationException.class,
-                () -> userService.createUser(userDto));
-        assertEquals("User with this email already exists", exception.getMessage());
-    }
-
-    @Test
     void getUserById_Success() {
         when(userRepository.findById(1)).thenReturn(Optional.of(user));
         when(userMapper.toDTO(user)).thenReturn(userDto);

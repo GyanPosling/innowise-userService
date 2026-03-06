@@ -2,8 +2,9 @@ package com.innowise.userservice.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.innowise.userservice.AbstractIntegrationTest;
+import com.innowise.userservice.model.dto.InternalUserCreateRequest;
+import com.innowise.userservice.model.dto.InternalUserCreateResponse;
 import com.innowise.userservice.model.dto.PaymentCardDto;
-import com.innowise.userservice.model.dto.UserDto;
 import com.innowise.userservice.repository.PaymentCardRepository;
 import com.innowise.userservice.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -43,7 +44,7 @@ class PaymentCardControllerTest extends AbstractIntegrationTest {
         paymentCardRepository.deleteAll();
         userRepository.deleteAll();
 
-        UserDto userDto = UserDto.builder()
+        InternalUserCreateRequest request = InternalUserCreateRequest.builder()
                 .name("John")
                 .surname("Doe")
                 .email("john.doe@example.com")
@@ -51,16 +52,16 @@ class PaymentCardControllerTest extends AbstractIntegrationTest {
                 .build();
 
         try {
-            String response = mockMvc.perform(post("/api/users")
-                            .header(AUTH_HEADER, adminAuthHeader())
+            String response = mockMvc.perform(post("/api/internal/users")
+                            .headers(internalHeaders())
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(userDto)))
+                            .content(objectMapper.writeValueAsString(request)))
                     .andReturn()
                     .getResponse()
                     .getContentAsString();
 
-            UserDto createdUser = objectMapper.readValue(response, UserDto.class);
-            userId = createdUser.getId();
+            InternalUserCreateResponse createdUser = objectMapper.readValue(response, InternalUserCreateResponse.class);
+            userId = createdUser.getUserId();
         } catch (Exception e) {
             throw new RuntimeException("Failed to create test user", e);
         }
@@ -76,7 +77,7 @@ class PaymentCardControllerTest extends AbstractIntegrationTest {
                 .build();
 
         mockMvc.perform(post("/api/users/{userId}/cards", userId)
-                        .header(AUTH_HEADER, adminAuthHeader())
+                        .headers(adminHeaders("POST", "/api/users/" + userId + "/cards"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(cardDto)))
                 .andExpect(status().isCreated())
@@ -96,13 +97,13 @@ class PaymentCardControllerTest extends AbstractIntegrationTest {
                 .build();
 
         mockMvc.perform(post("/api/users/{userId}/cards", userId)
-                        .header(AUTH_HEADER, adminAuthHeader())
+                        .headers(adminHeaders("POST", "/api/users/" + userId + "/cards"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(cardDto)))
                 .andExpect(status().isCreated());
 
         mockMvc.perform(post("/api/users/{userId}/cards", userId)
-                        .header(AUTH_HEADER, adminAuthHeader())
+                        .headers(adminHeaders("POST", "/api/users/" + userId + "/cards"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(cardDto)))
                 .andExpect(status().is4xxClientError());
@@ -118,7 +119,7 @@ class PaymentCardControllerTest extends AbstractIntegrationTest {
                 .build();
 
         mockMvc.perform(post("/api/users/{userId}/cards", userId)
-                        .header(AUTH_HEADER, adminAuthHeader())
+                        .headers(adminHeaders("POST", "/api/users/" + userId + "/cards"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(cardDto)))
                 .andExpect(status().isBadRequest())
@@ -137,7 +138,7 @@ class PaymentCardControllerTest extends AbstractIntegrationTest {
                 .build();
 
         String response = mockMvc.perform(post("/api/users/{userId}/cards", userId)
-                        .header(AUTH_HEADER, adminAuthHeader())
+                        .headers(adminHeaders("POST", "/api/users/" + userId + "/cards"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(createDto)))
                 .andReturn()
@@ -147,7 +148,7 @@ class PaymentCardControllerTest extends AbstractIntegrationTest {
         PaymentCardDto createdCard = objectMapper.readValue(response, PaymentCardDto.class);
 
         mockMvc.perform(get("/api/cards/{id}", createdCard.getId())
-                        .header(AUTH_HEADER, adminAuthHeader()))
+                        .headers(adminHeaders("GET", "/api/cards/" + createdCard.getId())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id", is(createdCard.getId())))
                 .andExpect(jsonPath("$.number", is("1234567890123456")));
@@ -164,14 +165,14 @@ class PaymentCardControllerTest extends AbstractIntegrationTest {
                     .build();
 
             mockMvc.perform(post("/api/users/{userId}/cards", userId)
-                            .header(AUTH_HEADER, adminAuthHeader())
+                            .headers(adminHeaders("POST", "/api/users/" + userId + "/cards"))
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(cardDto)))
                     .andExpect(status().isCreated());
         }
 
         mockMvc.perform(get("/api/users/{userId}/cards", userId)
-                        .header(AUTH_HEADER, adminAuthHeader()))
+                        .headers(adminHeaders("GET", "/api/users/" + userId + "/cards")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(3)));
     }
@@ -186,7 +187,7 @@ class PaymentCardControllerTest extends AbstractIntegrationTest {
                 .build();
 
         String response = mockMvc.perform(post("/api/users/{userId}/cards", userId)
-                        .header(AUTH_HEADER, adminAuthHeader())
+                        .headers(adminHeaders("POST", "/api/users/" + userId + "/cards"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(createDto)))
                 .andReturn()
@@ -203,7 +204,7 @@ class PaymentCardControllerTest extends AbstractIntegrationTest {
                 .build();
 
         mockMvc.perform(put("/api/cards/{id}", createdCard.getId())
-                        .header(AUTH_HEADER, adminAuthHeader())
+                        .headers(adminHeaders("PUT", "/api/cards/" + createdCard.getId()))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateDto)))
                 .andExpect(status().isOk())
@@ -221,7 +222,7 @@ class PaymentCardControllerTest extends AbstractIntegrationTest {
                 .build();
 
         mockMvc.perform(put("/api/cards/{id}", 1)
-                        .header(AUTH_HEADER, adminAuthHeader())
+                        .headers(adminHeaders("PUT", "/api/cards/1"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateDto)))
                 .andExpect(status().isBadRequest())
@@ -240,7 +241,7 @@ class PaymentCardControllerTest extends AbstractIntegrationTest {
                 .build();
 
         String response = mockMvc.perform(post("/api/users/{userId}/cards", userId)
-                        .header(AUTH_HEADER, adminAuthHeader())
+                        .headers(adminHeaders("POST", "/api/users/" + userId + "/cards"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(createDto)))
                 .andReturn()
@@ -251,7 +252,7 @@ class PaymentCardControllerTest extends AbstractIntegrationTest {
         boolean initialStatus = createdCard.isActive();
 
         mockMvc.perform(patch("/api/cards/{id}", createdCard.getId())
-                        .header(AUTH_HEADER, adminAuthHeader()))
+                        .headers(adminHeaders("PATCH", "/api/cards/" + createdCard.getId())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.active", is(!initialStatus)));
     }
@@ -267,14 +268,14 @@ class PaymentCardControllerTest extends AbstractIntegrationTest {
                     .build();
 
             mockMvc.perform(post("/api/users/{userId}/cards", userId)
-                            .header(AUTH_HEADER, adminAuthHeader())
+                            .headers(adminHeaders("POST", "/api/users/" + userId + "/cards"))
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(cardDto)))
                     .andExpect(status().isCreated());
         }
 
         mockMvc.perform(get("/api/cards")
-                        .header(AUTH_HEADER, adminAuthHeader())
+                        .headers(adminHeaders("GET", "/api/cards"))
                         .param("holder", "Holder 1")
                         .param("page", "0")
                         .param("size", "10"))
@@ -292,7 +293,7 @@ class PaymentCardControllerTest extends AbstractIntegrationTest {
                 .build();
 
         String response = mockMvc.perform(post("/api/users/{userId}/cards", userId)
-                        .header(AUTH_HEADER, adminAuthHeader())
+                        .headers(adminHeaders("POST", "/api/users/" + userId + "/cards"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(createDto)))
                 .andReturn()
@@ -302,18 +303,18 @@ class PaymentCardControllerTest extends AbstractIntegrationTest {
         PaymentCardDto createdCard = objectMapper.readValue(response, PaymentCardDto.class);
 
         mockMvc.perform(delete("/api/cards/{id}", createdCard.getId())
-                        .header(AUTH_HEADER, adminAuthHeader()))
+                        .headers(adminHeaders("DELETE", "/api/cards/" + createdCard.getId())))
                 .andExpect(status().isNoContent());
 
         mockMvc.perform(get("/api/cards/{id}", createdCard.getId())
-                        .header(AUTH_HEADER, adminAuthHeader()))
+                        .headers(adminHeaders("GET", "/api/cards/" + createdCard.getId())))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     void deleteCard_CardNotFound_ReturnsNotFound() throws Exception {
         mockMvc.perform(delete("/api/cards/{id}", 999)
-                        .header(AUTH_HEADER, adminAuthHeader()))
+                        .headers(adminHeaders("DELETE", "/api/cards/999")))
                 .andExpect(status().isNotFound());
     }
 }

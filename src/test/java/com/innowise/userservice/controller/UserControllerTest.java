@@ -2,6 +2,8 @@ package com.innowise.userservice.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.innowise.userservice.AbstractIntegrationTest;
+import com.innowise.userservice.model.dto.InternalUserCreateRequest;
+import com.innowise.userservice.model.dto.InternalUserCreateResponse;
 import com.innowise.userservice.model.dto.UserDto;
 import com.innowise.userservice.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -41,19 +43,29 @@ class UserControllerTest extends AbstractIntegrationTest {
 
     @Test
     void createUser_ValidInput_ReturnsCreated() throws Exception {
-        UserDto userDto = UserDto.builder()
+        InternalUserCreateRequest request = InternalUserCreateRequest.builder()
                 .name("John")
                 .surname("Doe")
                 .email("john.doe@example.com")
                 .birthDate(LocalDate.of(1990, 1, 1))
                 .build();
 
-        mockMvc.perform(post("/api/users")
-                        .header(AUTH_HEADER, userAuthHeader(1L, "auth1@example.com"))
+        String response = mockMvc.perform(post("/api/internal/users")
+                        .headers(internalHeaders())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(userDto)))
+                        .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id", notNullValue()))
+                .andExpect(jsonPath("$.userId", notNullValue()))
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        InternalUserCreateResponse createdUser = objectMapper.readValue(response, InternalUserCreateResponse.class);
+
+        mockMvc.perform(get("/api/users/{id}", createdUser.getUserId())
+                        .headers(adminHeaders("GET", "/api/users/" + createdUser.getUserId())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id", is(createdUser.getUserId())))
                 .andExpect(jsonPath("$.name", is("John")))
                 .andExpect(jsonPath("$.email", is("john.doe@example.com")))
                 .andExpect(jsonPath("$.active", is(true)));
@@ -61,39 +73,39 @@ class UserControllerTest extends AbstractIntegrationTest {
 
     @Test
     void createUser_DuplicateEmail_ReturnsConflict() throws Exception {
-        UserDto userDto = UserDto.builder()
+        InternalUserCreateRequest request = InternalUserCreateRequest.builder()
                 .name("John")
                 .surname("Doe")
                 .email("john.doe@example.com")
                 .birthDate(LocalDate.of(1990, 1, 1))
                 .build();
 
-        mockMvc.perform(post("/api/users")
-                        .header(AUTH_HEADER, userAuthHeader(1L, "auth1@example.com"))
+        mockMvc.perform(post("/api/internal/users")
+                        .headers(internalHeaders())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(userDto)))
+                        .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated());
 
-        mockMvc.perform(post("/api/users")
-                        .header(AUTH_HEADER, userAuthHeader(2L, "auth2@example.com"))
+        mockMvc.perform(post("/api/internal/users")
+                        .headers(internalHeaders())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(userDto)))
+                        .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().is4xxClientError());
     }
 
     @Test
     void createUser_InvalidInput_ReturnsBadRequest() throws Exception {
-        UserDto userDto = UserDto.builder()
+        InternalUserCreateRequest request = InternalUserCreateRequest.builder()
                 .name("")
                 .surname("D")
                 .email("not-an-email")
                 .birthDate(LocalDate.now().plusDays(1))
                 .build();
 
-        mockMvc.perform(post("/api/users")
-                        .header(AUTH_HEADER, userAuthHeader(1L, "auth1@example.com"))
+        mockMvc.perform(post("/api/internal/users")
+                        .headers(internalHeaders())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(userDto)))
+                        .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message", containsString("name")))
                 .andExpect(jsonPath("$.message", containsString("surname")))
@@ -103,56 +115,56 @@ class UserControllerTest extends AbstractIntegrationTest {
 
     @Test
     void getUserById_UserExists_ReturnsUser() throws Exception {
-        UserDto userDto = UserDto.builder()
+        InternalUserCreateRequest request = InternalUserCreateRequest.builder()
                 .name("John")
                 .surname("Doe")
                 .email("john.doe@example.com")
                 .birthDate(LocalDate.of(1990, 1, 1))
                 .build();
 
-        String response = mockMvc.perform(post("/api/users")
-                        .header(AUTH_HEADER, userAuthHeader(1L, "auth1@example.com"))
+        String response = mockMvc.perform(post("/api/internal/users")
+                        .headers(internalHeaders())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(userDto)))
+                        .content(objectMapper.writeValueAsString(request)))
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
 
-        UserDto createdUser = objectMapper.readValue(response, UserDto.class);
+        InternalUserCreateResponse createdUser = objectMapper.readValue(response, InternalUserCreateResponse.class);
 
-        mockMvc.perform(get("/api/users/{id}", createdUser.getId())
-                        .header(AUTH_HEADER, adminAuthHeader()))
+        mockMvc.perform(get("/api/users/{id}", createdUser.getUserId())
+                        .headers(adminHeaders("GET", "/api/users/" + createdUser.getUserId())))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id", is(createdUser.getId())))
+                .andExpect(jsonPath("$.id", is(createdUser.getUserId())))
                 .andExpect(jsonPath("$.name", is("John")));
     }
 
     @Test
     void getUserById_UserNotExists_ReturnsNotFound() throws Exception {
         mockMvc.perform(get("/api/users/{id}", 999)
-                        .header(AUTH_HEADER, adminAuthHeader()))
+                        .headers(adminHeaders("GET", "/api/users/999")))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     void getAllUsers_WithPagination_ReturnsPage() throws Exception {
         for (int i = 1; i <= 3; i++) {
-            UserDto userDto = UserDto.builder()
+            InternalUserCreateRequest request = InternalUserCreateRequest.builder()
                     .name("User" + i)
                     .surname("Test")
                     .email("user" + i + "@example.com")
                     .birthDate(LocalDate.of(1990, 1, i))
                     .build();
 
-            mockMvc.perform(post("/api/users")
-                            .header(AUTH_HEADER, userAuthHeader((long) i, "auth" + i + "@example.com"))
+            mockMvc.perform(post("/api/internal/users")
+                            .headers(internalHeaders())
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(userDto)))
+                            .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isCreated());
         }
 
         mockMvc.perform(get("/api/users")
-                        .header(AUTH_HEADER, adminAuthHeader())
+                        .headers(adminHeaders("GET", "/api/users"))
                         .param("page", "0")
                         .param("size", "2"))
                 .andExpect(status().isOk())
@@ -162,22 +174,22 @@ class UserControllerTest extends AbstractIntegrationTest {
 
     @Test
     void updateUser_ValidInput_ReturnsUpdatedUser() throws Exception {
-        UserDto createDto = UserDto.builder()
+        InternalUserCreateRequest createDto = InternalUserCreateRequest.builder()
                 .name("John")
                 .surname("Doe")
                 .email("john.doe@example.com")
                 .birthDate(LocalDate.of(1990, 1, 1))
                 .build();
 
-        String response = mockMvc.perform(post("/api/users")
-                        .header(AUTH_HEADER, userAuthHeader(1L, "auth1@example.com"))
+        String response = mockMvc.perform(post("/api/internal/users")
+                        .headers(internalHeaders())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(createDto)))
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
 
-        UserDto createdUser = objectMapper.readValue(response, UserDto.class);
+        InternalUserCreateResponse createdUser = objectMapper.readValue(response, InternalUserCreateResponse.class);
 
         UserDto updateDto = UserDto.builder()
                 .name("Jane")
@@ -186,8 +198,8 @@ class UserControllerTest extends AbstractIntegrationTest {
                 .birthDate(LocalDate.of(1992, 2, 2))
                 .build();
 
-        mockMvc.perform(put("/api/users/{id}", createdUser.getId())
-                        .header(AUTH_HEADER, adminAuthHeader())
+        mockMvc.perform(put("/api/users/{id}", createdUser.getUserId())
+                        .headers(adminHeaders("PUT", "/api/users/" + createdUser.getUserId()))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateDto)))
                 .andExpect(status().isOk())
@@ -205,7 +217,7 @@ class UserControllerTest extends AbstractIntegrationTest {
                 .build();
 
         mockMvc.perform(put("/api/users/{id}", 1)
-                        .header(AUTH_HEADER, adminAuthHeader())
+                        .headers(adminHeaders("PUT", "/api/users/1"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateDto)))
                 .andExpect(status().isBadRequest())
@@ -217,62 +229,70 @@ class UserControllerTest extends AbstractIntegrationTest {
 
     @Test
     void toggleUserStatus_UserExists_TogglesStatus() throws Exception {
-        UserDto createDto = UserDto.builder()
+        InternalUserCreateRequest createDto = InternalUserCreateRequest.builder()
                 .name("John")
                 .surname("Doe")
                 .email("john.doe@example.com")
                 .birthDate(LocalDate.of(1990, 1, 1))
                 .build();
 
-        String response = mockMvc.perform(post("/api/users")
-                        .header(AUTH_HEADER, userAuthHeader(1L, "auth1@example.com"))
+        String response = mockMvc.perform(post("/api/internal/users")
+                        .headers(internalHeaders())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(createDto)))
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
 
-        UserDto createdUser = objectMapper.readValue(response, UserDto.class);
-        boolean initialStatus = createdUser.isActive();
+        InternalUserCreateResponse createdUser = objectMapper.readValue(response, InternalUserCreateResponse.class);
 
-        mockMvc.perform(patch("/api/users/{id}", createdUser.getId())
-                        .header(AUTH_HEADER, adminAuthHeader()))
+        String createdUserResponse = mockMvc.perform(get("/api/users/{id}", createdUser.getUserId())
+                        .headers(adminHeaders("GET", "/api/users/" + createdUser.getUserId())))
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        UserDto createdUserDetails = objectMapper.readValue(createdUserResponse, UserDto.class);
+        boolean initialStatus = createdUserDetails.isActive();
+
+        mockMvc.perform(patch("/api/users/{id}", createdUser.getUserId())
+                        .headers(adminHeaders("PATCH", "/api/users/" + createdUser.getUserId())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.active", is(!initialStatus)));
     }
 
     @Test
     void deleteUser_UserExists_ReturnsDeletedUser() throws Exception {
-        UserDto createDto = UserDto.builder()
+        InternalUserCreateRequest createDto = InternalUserCreateRequest.builder()
                 .name("John")
                 .surname("Doe")
                 .email("john.doe@example.com")
                 .birthDate(LocalDate.of(1990, 1, 1))
                 .build();
 
-        String response = mockMvc.perform(post("/api/users")
-                        .header(AUTH_HEADER, userAuthHeader(1L, "auth1@example.com"))
+        String response = mockMvc.perform(post("/api/internal/users")
+                        .headers(internalHeaders())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(createDto)))
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
 
-        UserDto createdUser = objectMapper.readValue(response, UserDto.class);
+        InternalUserCreateResponse createdUser = objectMapper.readValue(response, InternalUserCreateResponse.class);
 
-        mockMvc.perform(delete("/api/users/{id}", createdUser.getId())
-                        .header(AUTH_HEADER, adminAuthHeader()))
+        mockMvc.perform(delete("/api/users/{id}", createdUser.getUserId())
+                        .headers(adminHeaders("DELETE", "/api/users/" + createdUser.getUserId())))
                 .andExpect(status().isNoContent());
 
-        mockMvc.perform(get("/api/users/{id}", createdUser.getId())
-                        .header(AUTH_HEADER, adminAuthHeader()))
+        mockMvc.perform(get("/api/users/{id}", createdUser.getUserId())
+                        .headers(adminHeaders("GET", "/api/users/" + createdUser.getUserId())))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     void deleteUser_UserNotFound_ReturnsNotFound() throws Exception {
         mockMvc.perform(delete("/api/users/{id}", 999)
-                        .header(AUTH_HEADER, adminAuthHeader()))
+                        .headers(adminHeaders("DELETE", "/api/users/999")))
                 .andExpect(status().isNotFound());
     }
 }

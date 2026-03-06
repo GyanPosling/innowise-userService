@@ -3,6 +3,7 @@ package com.innowise.userservice.service.impl;
 import com.innowise.userservice.exception.ResourceNotFoundException;
 import com.innowise.userservice.exception.ValidationException;
 import com.innowise.userservice.mapper.UserMapper;
+import com.innowise.userservice.model.dto.InternalUserCreateRequest;
 import com.innowise.userservice.model.dto.UserDto;
 import com.innowise.userservice.model.entity.User;
 import com.innowise.userservice.repository.UserRepository;
@@ -20,6 +21,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.beans.factory.ObjectProvider;
 
 import java.util.Collection;
 import java.util.List;
@@ -34,16 +36,28 @@ public class UserServiceImpl implements UserService {
     private final UserSpecification userSpecification;
     private final UserMapper userMapper;
     private final CacheManager cacheManager;
+    private final ObjectProvider<UserService> userServiceProvider;
 
     @Override
     @Transactional
-    @CacheEvict(value = "users", allEntries = true)
-    public UserDto createUser(UserDto userDTO) {
-        if (userRepository.findByEmail(userDTO.getEmail()).isPresent()) {
+    @Caching(
+            put = {
+                    @CachePut(value = "users", key = "#result.id"),
+                    @CachePut(value = "usersByEmail", key = "#result.email")
+            },
+            evict = @CacheEvict(value = "usersPage", allEntries = true)
+    )
+    public UserDto createInternalUser(InternalUserCreateRequest request) {
+        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
             throw new ValidationException("User with this email already exists");
         }
-        User user = userMapper.toEntity(userDTO);
-        user.setActive(true);
+        User user = User.builder()
+                .name(request.getName())
+                .surname(request.getSurname())
+                .birthDate(request.getBirthDate())
+                .email(request.getEmail())
+                .active(true)
+                .build();
         User savedUser = userRepository.save(user);
         return userMapper.toDTO(savedUser);
     }
@@ -149,6 +163,22 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new ResourceNotFoundException(USER_NOT_FOUND_MESSAGE + id));
         userRepository.deleteById(id);
         evictUserCaches(id);
+    }
+
+    @Override
+    @Transactional
+    public void linkAuthUserId(Integer userId, Long authUserId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException(USER_NOT_FOUND_MESSAGE + userId));
+        user.setAuthUserId(authUserId);
+        userRepository.save(user);
+        evictUserCaches(userId);
+    }
+
+    @Override
+    @Transactional
+    public void deleteInternalUser(Integer userId) {
+        userServiceProvider.getObject().deleteUser(userId);
     }
 
     private void evictUserCaches(Integer userId) {

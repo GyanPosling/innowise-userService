@@ -27,14 +27,15 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
-                                "/v3/api-docs/**"
+                                "/v3/api-docs/**",
+                                "/api/internal/**"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(ex -> ex.authenticationEntryPoint((request, response, authException) -> {
-                    response.setStatus(HttpStatus.FORBIDDEN.value());
+                    response.setStatus(HttpStatus.UNAUTHORIZED.value());
                     response.setContentType("application/json");
-                    response.getWriter().write("{\"error\":\"Forbidden\",\"message\":\"Authentication required\"}");
+                    response.getWriter().write("{\"error\":\"Unauthorized\",\"message\":\"Authentication required\"}");
                 }))
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 

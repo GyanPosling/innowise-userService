@@ -1,5 +1,6 @@
 package com.innowise.userservice.service;
 
+import com.innowise.userservice.model.dto.InternalUserCreateRequest;
 import com.innowise.userservice.model.dto.UserDto;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -12,13 +13,7 @@ import java.util.List;
  */
 public interface UserService {
 
-    /**
-     * Creates a new user.
-     *
-     * @param userDTO user data
-     * @return created user
-     */
-    UserDto createUser(UserDto userDTO);
+    UserDto createInternalUser(InternalUserCreateRequest request);
 
     /**
      * Retrieves a user by id.
@@ -85,4 +80,8 @@ public interface UserService {
      * @param id user id
      */
     void deleteUser(Integer id);
+
+    void linkAuthUserId(Integer userId, Long authUserId);
+
+    void deleteInternalUser(Integer userId);
 }
