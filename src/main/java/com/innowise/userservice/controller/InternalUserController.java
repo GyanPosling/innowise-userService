@@ -28,7 +28,7 @@ public class InternalUserController {
 
     private final UserService userService;
 
-    @Value("${internal.secret:}")
+    @Value("${userservice.internal-endpoint-secret}")
     private String internalSecret;
 
     @PostMapping

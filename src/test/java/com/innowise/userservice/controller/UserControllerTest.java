@@ -63,7 +63,7 @@ class UserControllerTest extends AbstractIntegrationTest {
         InternalUserCreateResponse createdUser = objectMapper.readValue(response, InternalUserCreateResponse.class);
 
         mockMvc.perform(get("/api/users/{id}", createdUser.getUserId())
-                        .headers(adminHeaders()))
+                        .headers(adminHeaders("GET", "/api/users/" + createdUser.getUserId())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id", is(createdUser.getUserId())))
                 .andExpect(jsonPath("$.name", is("John")))
@@ -133,7 +133,7 @@ class UserControllerTest extends AbstractIntegrationTest {
         InternalUserCreateResponse createdUser = objectMapper.readValue(response, InternalUserCreateResponse.class);
 
         mockMvc.perform(get("/api/users/{id}", createdUser.getUserId())
-                        .headers(adminHeaders()))
+                        .headers(adminHeaders("GET", "/api/users/" + createdUser.getUserId())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id", is(createdUser.getUserId())))
                 .andExpect(jsonPath("$.name", is("John")));
@@ -142,7 +142,7 @@ class UserControllerTest extends AbstractIntegrationTest {
     @Test
     void getUserById_UserNotExists_ReturnsNotFound() throws Exception {
         mockMvc.perform(get("/api/users/{id}", 999)
-                        .headers(adminHeaders()))
+                        .headers(adminHeaders("GET", "/api/users/999")))
                 .andExpect(status().isNotFound());
     }
 
@@ -164,7 +164,7 @@ class UserControllerTest extends AbstractIntegrationTest {
         }
 
         mockMvc.perform(get("/api/users")
-                        .headers(adminHeaders())
+                        .headers(adminHeaders("GET", "/api/users"))
                         .param("page", "0")
                         .param("size", "2"))
                 .andExpect(status().isOk())
@@ -199,7 +199,7 @@ class UserControllerTest extends AbstractIntegrationTest {
                 .build();
 
         mockMvc.perform(put("/api/users/{id}", createdUser.getUserId())
-                        .headers(adminHeaders())
+                        .headers(adminHeaders("PUT", "/api/users/" + createdUser.getUserId()))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateDto)))
                 .andExpect(status().isOk())
@@ -217,7 +217,7 @@ class UserControllerTest extends AbstractIntegrationTest {
                 .build();
 
         mockMvc.perform(put("/api/users/{id}", 1)
-                        .headers(adminHeaders())
+                        .headers(adminHeaders("PUT", "/api/users/1"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateDto)))
                 .andExpect(status().isBadRequest())
@@ -247,7 +247,7 @@ class UserControllerTest extends AbstractIntegrationTest {
         InternalUserCreateResponse createdUser = objectMapper.readValue(response, InternalUserCreateResponse.class);
 
         String createdUserResponse = mockMvc.perform(get("/api/users/{id}", createdUser.getUserId())
-                        .headers(adminHeaders()))
+                        .headers(adminHeaders("GET", "/api/users/" + createdUser.getUserId())))
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
@@ -256,7 +256,7 @@ class UserControllerTest extends AbstractIntegrationTest {
         boolean initialStatus = createdUserDetails.isActive();
 
         mockMvc.perform(patch("/api/users/{id}", createdUser.getUserId())
-                        .headers(adminHeaders()))
+                        .headers(adminHeaders("PATCH", "/api/users/" + createdUser.getUserId())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.active", is(!initialStatus)));
     }
@@ -281,18 +281,18 @@ class UserControllerTest extends AbstractIntegrationTest {
         InternalUserCreateResponse createdUser = objectMapper.readValue(response, InternalUserCreateResponse.class);
 
         mockMvc.perform(delete("/api/users/{id}", createdUser.getUserId())
-                        .headers(adminHeaders()))
+                        .headers(adminHeaders("DELETE", "/api/users/" + createdUser.getUserId())))
                 .andExpect(status().isNoContent());
 
         mockMvc.perform(get("/api/users/{id}", createdUser.getUserId())
-                        .headers(adminHeaders()))
+                        .headers(adminHeaders("GET", "/api/users/" + createdUser.getUserId())))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     void deleteUser_UserNotFound_ReturnsNotFound() throws Exception {
         mockMvc.perform(delete("/api/users/{id}", 999)
-                        .headers(adminHeaders()))
+                        .headers(adminHeaders("DELETE", "/api/users/999")))
                 .andExpect(status().isNotFound());
     }
 }
