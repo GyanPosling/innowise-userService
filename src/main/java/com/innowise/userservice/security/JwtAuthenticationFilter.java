@@ -35,7 +35,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private static final String SIGN_HEADER = "X-SIGN";
     private static final String SIGN_ALGORITHM = "HmacSHA256";
 
-    @Value("${userservice.internal-endpoint-secret}")
+    @Value("${gateway.internal-signing-secret}")
     private String internalSecret;
 
     @Value("${internal.ttl-seconds:60}")

@@ -5,7 +5,7 @@ import java.io.Serial;
 public class ValidationException extends RuntimeException {
 
     @Serial
-    private static final long serialVersionUID = -5744142728068470909L;
+    private static final long serialVersionUID = -8768645971750474833L;
 
     public ValidationException() {
         super("Validation failed");

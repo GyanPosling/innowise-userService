@@ -25,6 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 
 @Transactional(readOnly = true)
 @Service
@@ -48,7 +49,7 @@ public class PaymentCardServiceImpl implements PaymentCardService {
                     @CacheEvict(value = "cardsPage", allEntries = true)
             }
     )
-    public PaymentCardDto createCard(Integer userId, PaymentCardDto paymentCardDTO) {
+    public PaymentCardDto createCard(UUID userId, PaymentCardDto paymentCardDTO) {
         if (userService.getActiveCardCount(userId) >= 5) {
             throw new LimitExceededException("User cannot have more than 5 active cards");
         }
@@ -89,7 +90,7 @@ public class PaymentCardServiceImpl implements PaymentCardService {
 
     @Override
     @Cacheable(value = "userCardsList", key = "#userId")
-    public List<PaymentCardDto> getCardsByUserId(Integer userId) {
+    public List<PaymentCardDto> getCardsByUserId(UUID userId) {
         List<PaymentCard> cards = paymentCardRepository.findByUserId(userId);
         return cards.stream()
                 .map(paymentCardMapper::toDTO)
@@ -140,13 +141,13 @@ public class PaymentCardServiceImpl implements PaymentCardService {
     @Override
     @Transactional
     public void deleteCard(Integer id) {
-        Integer userId = paymentCardRepository.findUserIdByCardId(id)
+        UUID userId = paymentCardRepository.findUserIdByCardId(id)
                 .orElseThrow(() -> new ResourceNotFoundException(CARD_NOT_FOUND_MESSAGE + id));
         paymentCardRepository.deleteById(id);
         evictCardCaches(id, userId);
     }
 
-    private void evictCardCaches(Integer cardId, Integer userId) {
+    private void evictCardCaches(Integer cardId, UUID userId) {
         Cache cardsCache = cacheManager.getCache("cards");
         if (cardsCache != null) {
             cardsCache.evict(cardId);

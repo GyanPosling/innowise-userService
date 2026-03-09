@@ -1,18 +1,20 @@
 package com.innowise.userservice.controller;
 
+import com.innowise.userservice.controller.api.UserControllerApi;
+import com.innowise.userservice.model.dto.InternalUserCreateRequest;
 import com.innowise.userservice.model.dto.UserDto;
 import com.innowise.userservice.security.SecurityUtil;
 import com.innowise.userservice.service.UserService;
 import jakarta.validation.Valid;
+import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -23,128 +25,104 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.security.access.prepost.PreAuthorize;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
 @Validated
-@Tag(name = "Users", description = "User management API")
-public class UserController {
+public class UserController implements UserControllerApi {
 
     private final UserService userService;
     private final SecurityUtil securityUtil;
 
+    @PostMapping
+    @PreAuthorize("isAuthenticated()")
+    @Override
+    public ResponseEntity<UserDto> createUser(@Valid @RequestBody UserDto userDTO) {
+        userDTO.setId(securityUtil.getAuthenticatedUserId());
+        userDTO.setEmail(securityUtil.getAuthenticatedEmail());
+        UserDto createdUser = userService.createUser(userDTO);
+        return new ResponseEntity<>(createdUser, HttpStatus.CREATED);
+    }
 
-    @Operation(summary = "Get user by ID")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "User found",
-                    content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = UserDto.class))),
-            @ApiResponse(responseCode = "404", description = "User not found")
-    })
+    @PostMapping("/internal")
+    @PreAuthorize("@securityUtil.isInternalRequest()")
+    @Override
+    public ResponseEntity<Void> createInternalUser(
+            @Valid @RequestBody InternalUserCreateRequest request) {
+        userService.createUser(UserDto.builder()
+                .id(request.getId())
+                .name(request.getName())
+                .surname(request.getSurname())
+                .birthDate(request.getBirthDate())
+                .email(request.getEmail())
+                .active(true)
+                .build());
+        return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or @securityUtil.getAuthenticatedUserId() == #id")
+    @Override
     public ResponseEntity<UserDto> getUser(
-            @Parameter(description = "ID of the user", required = true, example = "1")
-            @PathVariable Integer id) {
+            @PathVariable UUID id) {
         UserDto user = userService.getUserById(id);
         return ResponseEntity.ok(user);
     }
 
-    @Operation(summary = "Get user by email")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "User found",
-                    content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = UserDto.class))),
-            @ApiResponse(responseCode = "404", description = "User not found")
-    })
     @GetMapping("/by-email")
     @PreAuthorize("hasRole('ADMIN') or authentication.name.equalsIgnoreCase(#email)")
+    @Override
     public ResponseEntity<UserDto> getUserByEmail(
-            @Parameter(description = "Email of the user", required = true, example = "user@example.com")
             @RequestParam String email) {
         UserDto user = userService.getUserByEmail(email);
         return ResponseEntity.ok(user);
     }
 
-    @Operation(summary = "Get users by emails")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Users retrieved",
-                    content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = UserDto.class)))
-    })
     @PostMapping("/batch")
     @PreAuthorize("hasRole('ADMIN') or @securityUtil.isSelfEmailList(#emails)")
+    @Override
     public ResponseEntity<List<UserDto>> getUsersByEmails(
             @RequestBody List<String> emails) {
         return ResponseEntity.ok(userService.getUsersByEmails(emails));
     }
 
-    @Operation(summary = "Get all users with filters and pagination")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Users retrieved")
-    })
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
+    @Override
     public ResponseEntity<Page<UserDto>> getAllUsers(
-            @Parameter(description = "Filter by first name")
             @RequestParam(required = false) String firstName,
-
-            @Parameter(description = "Filter by last name")
             @RequestParam(required = false) String lastName,
-
-            @Parameter(description = "Pagination parameters")
             Pageable pageable) {
         Page<UserDto> users = userService.getAllUsers(firstName, lastName, pageable);
         return ResponseEntity.ok(users);
     }
 
-    @Operation(summary = "Update user by ID")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "User updated"),
-            @ApiResponse(responseCode = "400", description = "Invalid input"),
-            @ApiResponse(responseCode = "404", description = "User not found")
-    })
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or @securityUtil.getAuthenticatedUserId() == #id")
+    @Override
     public ResponseEntity<UserDto> updateUser(
-            @Parameter(description = "ID of the user", required = true, example = "1")
-            @PathVariable Integer id,
+            @PathVariable UUID id,
 
             @Valid @RequestBody UserDto userDTO) {
         UserDto updatedUser = userService.updateUser(id, userDTO);
         return ResponseEntity.ok(updatedUser);
     }
 
-    @Operation(summary = "Toggle user status (active/inactive)")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Status toggled"),
-            @ApiResponse(responseCode = "404", description = "User not found")
-    })
     @PatchMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or @securityUtil.getAuthenticatedUserId() == #id")
+    @Override
     public ResponseEntity<UserDto> toggleUserStatus(
-            @Parameter(description = "ID of the user", required = true, example = "1")
-            @PathVariable Integer id) {
+            @PathVariable UUID id) {
         UserDto user = userService.toggleUserStatus(id);
         return ResponseEntity.ok(user);
     }
 
-    @Operation(summary = "Delete user by ID")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "204", description = "User deleted"),
-            @ApiResponse(responseCode = "404", description = "User not found")
-    })
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or @securityUtil.getAuthenticatedUserId() == #id")
+    @PreAuthorize("@securityUtil.isInternalRequest() or hasRole('ADMIN') or @securityUtil.getAuthenticatedUserId() == #id")
+    @Override
     public ResponseEntity<Void> deleteUser(
-            @Parameter(description = "ID of the user", required = true, example = "1")
-            @PathVariable Integer id) {
+            @PathVariable UUID id) {
         userService.deleteUser(id);
         return ResponseEntity.noContent().build();
     }

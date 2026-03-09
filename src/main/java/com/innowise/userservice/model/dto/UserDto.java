@@ -5,12 +5,12 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Past;
 import jakarta.validation.constraints.Size;
+import java.time.LocalDate;
+import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.time.LocalDate;
 
 @Data
 @Builder
@@ -18,7 +18,7 @@ import java.time.LocalDate;
 @AllArgsConstructor
 public class UserDto {
     @Schema(accessMode = Schema.AccessMode.READ_ONLY)
-    private Integer id;
+    private UUID id;
 
     @NotBlank(message = "Name is required")
     @Size(min = 2, max = 50, message = "Name must be between 2 and 50 characters")
@@ -35,9 +35,6 @@ public class UserDto {
     @Email(message = "Email must be valid")
     @Size(max = 100, message = "Email must not exceed 100 characters")
     private String email;
-
-    @Schema(accessMode = Schema.AccessMode.READ_ONLY)
-    private Long authUserId;
 
     private boolean active;
 }

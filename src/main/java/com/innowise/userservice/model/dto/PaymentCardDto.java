@@ -6,12 +6,12 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import java.time.LocalDate;
+import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.time.LocalDate;
 
 @Data
 @Builder
@@ -22,7 +22,7 @@ public class PaymentCardDto {
     private Integer id;
 
     @Schema(accessMode = Schema.AccessMode.READ_ONLY)
-    private Integer userId;
+    private UUID userId;
 
     @NotBlank(message = "Card number is required")
     @Pattern(regexp = "\\d{16}", message = "Card number must be 16 digits")

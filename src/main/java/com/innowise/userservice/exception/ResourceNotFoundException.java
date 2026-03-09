@@ -5,7 +5,7 @@ import java.io.Serial;
 public class ResourceNotFoundException extends RuntimeException {
 
     @Serial
-    private static final long serialVersionUID = 4518242213172664979L;
+    private static final long serialVersionUID = -5648357038844933706L;
 
     public ResourceNotFoundException() {
         super("Resource not found");

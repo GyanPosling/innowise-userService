@@ -2,11 +2,9 @@ spring:
   application:
     name: userservice
 
-jwt:
-  secret: ${JWT_SECRET}
+security:
+  internal:
+    secret: ${SERVICES_INTERNAL_SECRET:internal-secret}
 
-userservice:
-  internal-endpoint-secret: ${USERSERVICE_INTERNAL_ENDPOINT_SECRET}
-
-internal:
-  ttl-seconds: ${INTERNAL_TTL_SECONDS:60}
+gateway:
+  internal-signing-secret: ${GATEWAY_INTERNAL_SIGNING_SECRET:gateway-internal-secret}

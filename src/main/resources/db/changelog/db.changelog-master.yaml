@@ -5,6 +5,3 @@ databaseChangeLog:
   - include:
       file: changes/002-create-payment_cards-table.yaml
       relativeToChangelogFile: true
-  - include:
-      file: changes/003-add-auth-user-id.yaml
-      relativeToChangelogFile: true

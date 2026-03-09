@@ -1,6 +1,9 @@
 package com.innowise.userservice.repository;
 
 import com.innowise.userservice.model.entity.PaymentCard;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -10,15 +13,12 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
-import java.util.Optional;
-
 @Repository
 public interface PaymentCardRepository extends JpaRepository<PaymentCard, Integer>, JpaSpecificationExecutor<PaymentCard> {
 
-    List<PaymentCard> findByUserId(Integer userId);
+    List<PaymentCard> findByUserId(UUID userId);
 
-    Page<PaymentCard> findByUserId(Integer userId, Pageable pageable);
+    Page<PaymentCard> findByUserId(UUID userId, Pageable pageable);
 
     @Modifying
     @Query("UPDATE PaymentCard pc SET pc.active = :active WHERE pc.id = :id")
@@ -26,8 +26,8 @@ public interface PaymentCardRepository extends JpaRepository<PaymentCard, Intege
 
     @Query(value = "SELECT EXISTS(SELECT 1 FROM payment_cards WHERE user_id = :userId AND number = :cardNumber)",
             nativeQuery = true)
-    boolean existsByUserIdAndCardNumber(@Param("userId") Integer userId, @Param("cardNumber") String cardNumber);
+    boolean existsByUserIdAndCardNumber(@Param("userId") UUID userId, @Param("cardNumber") String cardNumber);
 
     @Query("SELECT pc.user.id FROM PaymentCard pc WHERE pc.id = :id")
-    Optional<Integer> findUserIdByCardId(@Param("id") Integer id);
+    Optional<UUID> findUserIdByCardId(@Param("id") Integer id);
 }

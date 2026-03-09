@@ -3,7 +3,6 @@ package com.innowise.userservice.service.impl;
 import com.innowise.userservice.exception.ResourceNotFoundException;
 import com.innowise.userservice.exception.ValidationException;
 import com.innowise.userservice.mapper.UserMapper;
-import com.innowise.userservice.model.dto.InternalUserCreateRequest;
 import com.innowise.userservice.model.dto.UserDto;
 import com.innowise.userservice.model.entity.User;
 import com.innowise.userservice.repository.UserRepository;
@@ -21,10 +20,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.beans.factory.ObjectProvider;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
+
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -36,7 +36,6 @@ public class UserServiceImpl implements UserService {
     private final UserSpecification userSpecification;
     private final UserMapper userMapper;
     private final CacheManager cacheManager;
-    private final ObjectProvider<UserService> userServiceProvider;
 
     @Override
     @Transactional
@@ -47,24 +46,26 @@ public class UserServiceImpl implements UserService {
             },
             evict = @CacheEvict(value = "usersPage", allEntries = true)
     )
-    public UserDto createInternalUser(InternalUserCreateRequest request) {
-        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+    public UserDto createUser(UserDto userDTO) {
+        if (userDTO.getId() == null) {
+            throw new ValidationException("User id is required");
+        }
+        if (userRepository.existsById(userDTO.getId())) {
+            throw new ValidationException("User with this id already exists");
+        }
+        if (userRepository.findByEmail(userDTO.getEmail()).isPresent()) {
             throw new ValidationException("User with this email already exists");
         }
-        User user = User.builder()
-                .name(request.getName())
-                .surname(request.getSurname())
-                .birthDate(request.getBirthDate())
-                .email(request.getEmail())
-                .active(true)
-                .build();
+
+        User user = userMapper.toEntity(userDTO);
+        user.setActive(true);
         User savedUser = userRepository.save(user);
         return userMapper.toDTO(savedUser);
     }
 
     @Override
     @Cacheable(value = "users", key = "#id", unless = "#result == null")
-    public UserDto getUserById(Integer id) {
+    public UserDto getUserById(UUID id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(USER_NOT_FOUND_MESSAGE + id));
         return userMapper.toDTO(user);
@@ -113,7 +114,7 @@ public class UserServiceImpl implements UserService {
                     @CacheEvict(value = "userCards", key = "#id")
             }
     )
-    public UserDto updateUser(Integer id, UserDto userDTO) {
+    public UserDto updateUser(UUID id, UserDto userDTO) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(USER_NOT_FOUND_MESSAGE + id));
         String newEmail = userDTO.getEmail();
@@ -138,7 +139,7 @@ public class UserServiceImpl implements UserService {
                     @CacheEvict(value = "userCards", key = "#id")
             }
     )
-    public UserDto toggleUserStatus(Integer id) {
+    public UserDto toggleUserStatus(UUID id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(USER_NOT_FOUND_MESSAGE + id));
         boolean newStatus = !user.isActive();
@@ -149,7 +150,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Cacheable(value = "userCards", key = "#userId", unless = "#result == 0")
-    public int getActiveCardCount(Integer userId) {
+    public int getActiveCardCount(UUID userId) {
         if (!userRepository.existsById(userId)) {
             throw new ResourceNotFoundException(USER_NOT_FOUND_MESSAGE + userId);
         }
@@ -158,30 +159,14 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public void deleteUser(Integer id) {
+    public void deleteUser(UUID id) {
         userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(USER_NOT_FOUND_MESSAGE + id));
         userRepository.deleteById(id);
         evictUserCaches(id);
     }
 
-    @Override
-    @Transactional
-    public void linkAuthUserId(Integer userId, Long authUserId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException(USER_NOT_FOUND_MESSAGE + userId));
-        user.setAuthUserId(authUserId);
-        userRepository.save(user);
-        evictUserCaches(userId);
-    }
-
-    @Override
-    @Transactional
-    public void deleteInternalUser(Integer userId) {
-        userServiceProvider.getObject().deleteUser(userId);
-    }
-
-    private void evictUserCaches(Integer userId) {
+    private void evictUserCaches(UUID userId) {
         Cache usersCache = cacheManager.getCache("users");
         if (usersCache != null) {
             usersCache.evict(userId);

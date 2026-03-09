@@ -1,10 +1,10 @@
 package com.innowise.userservice.service;
 
 import com.innowise.userservice.model.dto.PaymentCardDto;
+import java.util.List;
+import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-
-import java.util.List;
 
 
 /**
@@ -19,7 +19,7 @@ public interface PaymentCardService {
      * @param paymentCardDTO card data
      * @return created card
      */
-    PaymentCardDto createCard(Integer userId, PaymentCardDto paymentCardDTO);
+    PaymentCardDto createCard(UUID userId, PaymentCardDto paymentCardDTO);
 
     /**
      * Retrieves a card by id.
@@ -44,7 +44,7 @@ public interface PaymentCardService {
      * @param userId user id
      * @return list of cards
      */
-    List<PaymentCardDto> getCardsByUserId(Integer userId);
+    List<PaymentCardDto> getCardsByUserId(UUID userId);
 
     /**
      * Updates card data.

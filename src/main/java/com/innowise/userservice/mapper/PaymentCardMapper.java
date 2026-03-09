@@ -3,6 +3,7 @@ package com.innowise.userservice.mapper;
 import com.innowise.userservice.model.dto.PaymentCardDto;
 import com.innowise.userservice.model.entity.PaymentCard;
 import com.innowise.userservice.model.entity.User;
+import java.util.UUID;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
@@ -15,7 +16,7 @@ public interface PaymentCardMapper {
     @Mapping(source = "userId", target = "user")
     PaymentCard toEntity(PaymentCardDto paymentCardDTO);
 
-    default User mapUserIdToUser(Integer userId) {
+    default User mapUserIdToUser(UUID userId) {
         if (userId == null) return null;
         User user = new User();
         user.setId(userId);

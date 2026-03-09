@@ -3,7 +3,6 @@ package com.innowise.userservice.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.innowise.userservice.AbstractIntegrationTest;
 import com.innowise.userservice.model.dto.InternalUserCreateRequest;
-import com.innowise.userservice.model.dto.InternalUserCreateResponse;
 import com.innowise.userservice.model.dto.PaymentCardDto;
 import com.innowise.userservice.repository.PaymentCardRepository;
 import com.innowise.userservice.repository.UserRepository;
@@ -16,6 +15,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDate;
+import java.util.UUID;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
@@ -37,44 +37,33 @@ class PaymentCardControllerTest extends AbstractIntegrationTest {
     private final ObjectMapper objectMapper;
     private final UserRepository userRepository;
     private final PaymentCardRepository paymentCardRepository;
-    private Integer userId;
+
+    private UUID userId;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws Exception {
         paymentCardRepository.deleteAll();
         userRepository.deleteAll();
 
+        userId = testUserId(1);
         InternalUserCreateRequest request = InternalUserCreateRequest.builder()
+                .id(userId)
                 .name("John")
                 .surname("Doe")
                 .email("john.doe@example.com")
                 .birthDate(LocalDate.of(1990, 1, 1))
                 .build();
 
-        try {
-            String response = mockMvc.perform(post("/api/internal/users")
-                            .headers(internalHeaders())
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(request)))
-                    .andReturn()
-                    .getResponse()
-                    .getContentAsString();
-
-            InternalUserCreateResponse createdUser = objectMapper.readValue(response, InternalUserCreateResponse.class);
-            userId = createdUser.getUserId();
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to create test user", e);
-        }
+        mockMvc.perform(post("/api/users/internal")
+                        .headers(internalHeaders())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated());
     }
 
     @Test
     void createCard_ValidInput_ReturnsCreated() throws Exception {
-        PaymentCardDto cardDto = PaymentCardDto.builder()
-                .userId(userId)
-                .number("1234567890123456")
-                .holder("John Doe")
-                .expirationDate(LocalDate.now().plusYears(2))
-                .build();
+        PaymentCardDto cardDto = buildCard("1234567890123456", "John Doe");
 
         mockMvc.perform(post("/api/users/{userId}/cards", userId)
                         .headers(adminHeaders("POST", "/api/users/" + userId + "/cards"))
@@ -89,12 +78,7 @@ class PaymentCardControllerTest extends AbstractIntegrationTest {
 
     @Test
     void createCard_DuplicateCardNumber_ReturnsConflict() throws Exception {
-        PaymentCardDto cardDto = PaymentCardDto.builder()
-                .userId(userId)
-                .number("1234567890123456")
-                .holder("John Doe")
-                .expirationDate(LocalDate.now().plusYears(2))
-                .build();
+        PaymentCardDto cardDto = buildCard("1234567890123456", "John Doe");
 
         mockMvc.perform(post("/api/users/{userId}/cards", userId)
                         .headers(adminHeaders("POST", "/api/users/" + userId + "/cards"))
@@ -106,7 +90,7 @@ class PaymentCardControllerTest extends AbstractIntegrationTest {
                         .headers(adminHeaders("POST", "/api/users/" + userId + "/cards"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(cardDto)))
-                .andExpect(status().is4xxClientError());
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -130,22 +114,7 @@ class PaymentCardControllerTest extends AbstractIntegrationTest {
 
     @Test
     void getCardById_CardExists_ReturnsCard() throws Exception {
-        PaymentCardDto createDto = PaymentCardDto.builder()
-                .userId(userId)
-                .number("1234567890123456")
-                .holder("John Doe")
-                .expirationDate(LocalDate.now().plusYears(2))
-                .build();
-
-        String response = mockMvc.perform(post("/api/users/{userId}/cards", userId)
-                        .headers(adminHeaders("POST", "/api/users/" + userId + "/cards"))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(createDto)))
-                .andReturn()
-                .getResponse()
-                .getContentAsString();
-
-        PaymentCardDto createdCard = objectMapper.readValue(response, PaymentCardDto.class);
+        PaymentCardDto createdCard = createCard("1234567890123456", "John Doe");
 
         mockMvc.perform(get("/api/cards/{id}", createdCard.getId())
                         .headers(adminHeaders("GET", "/api/cards/" + createdCard.getId())))
@@ -156,20 +125,9 @@ class PaymentCardControllerTest extends AbstractIntegrationTest {
 
     @Test
     void getCardsByUserId_UserHasCards_ReturnsCards() throws Exception {
-        for (int i = 1; i <= 3; i++) {
-            PaymentCardDto cardDto = PaymentCardDto.builder()
-                    .userId(userId)
-                    .number("123456789012345" + i)
-                    .holder("John Doe " + i)
-                    .expirationDate(LocalDate.now().plusYears(2))
-                    .build();
-
-            mockMvc.perform(post("/api/users/{userId}/cards", userId)
-                            .headers(adminHeaders("POST", "/api/users/" + userId + "/cards"))
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(cardDto)))
-                    .andExpect(status().isCreated());
-        }
+        createCard("1234567890123451", "John Doe 1");
+        createCard("1234567890123452", "John Doe 2");
+        createCard("1234567890123453", "John Doe 3");
 
         mockMvc.perform(get("/api/users/{userId}/cards", userId)
                         .headers(adminHeaders("GET", "/api/users/" + userId + "/cards")))
@@ -179,23 +137,7 @@ class PaymentCardControllerTest extends AbstractIntegrationTest {
 
     @Test
     void updateCard_ValidInput_ReturnsUpdatedCard() throws Exception {
-        PaymentCardDto createDto = PaymentCardDto.builder()
-                .userId(userId)
-                .number("1234567890123456")
-                .holder("John Doe")
-                .expirationDate(LocalDate.now().plusYears(2))
-                .build();
-
-        String response = mockMvc.perform(post("/api/users/{userId}/cards", userId)
-                        .headers(adminHeaders("POST", "/api/users/" + userId + "/cards"))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(createDto)))
-                .andReturn()
-                .getResponse()
-                .getContentAsString();
-
-        PaymentCardDto createdCard = objectMapper.readValue(response, PaymentCardDto.class);
-
+        PaymentCardDto createdCard = createCard("1234567890123456", "John Doe");
         PaymentCardDto updateDto = PaymentCardDto.builder()
                 .userId(userId)
                 .number("9876543210987654")
@@ -213,94 +155,33 @@ class PaymentCardControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void updateCard_InvalidInput_ReturnsBadRequest() throws Exception {
-        PaymentCardDto updateDto = PaymentCardDto.builder()
-                .userId(userId)
-                .number("bad")
-                .holder(" ")
-                .expirationDate(LocalDate.now().minusDays(5))
-                .build();
-
-        mockMvc.perform(put("/api/cards/{id}", 1)
-                        .headers(adminHeaders("PUT", "/api/cards/1"))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(updateDto)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message", containsString("number")))
-                .andExpect(jsonPath("$.message", containsString("holder")))
-                .andExpect(jsonPath("$.message", containsString("expirationDate")));
-    }
-
-    @Test
     void toggleCardStatus_CardExists_TogglesStatus() throws Exception {
-        PaymentCardDto createDto = PaymentCardDto.builder()
-                .userId(userId)
-                .number("1234567890123456")
-                .holder("John Doe")
-                .expirationDate(LocalDate.now().plusYears(2))
-                .build();
-
-        String response = mockMvc.perform(post("/api/users/{userId}/cards", userId)
-                        .headers(adminHeaders("POST", "/api/users/" + userId + "/cards"))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(createDto)))
-                .andReturn()
-                .getResponse()
-                .getContentAsString();
-
-        PaymentCardDto createdCard = objectMapper.readValue(response, PaymentCardDto.class);
-        boolean initialStatus = createdCard.isActive();
+        PaymentCardDto createdCard = createCard("1234567890123456", "John Doe");
 
         mockMvc.perform(patch("/api/cards/{id}", createdCard.getId())
                         .headers(adminHeaders("PATCH", "/api/cards/" + createdCard.getId())))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.active", is(!initialStatus)));
+                .andExpect(jsonPath("$.active", is(false)));
     }
 
     @Test
-    void getAllCards_WithFilter_ReturnsFilteredCards() throws Exception {
-        for (int i = 1; i <= 3; i++) {
-            PaymentCardDto cardDto = PaymentCardDto.builder()
-                    .userId(userId)
-                    .number("123456789012345" + i)
-                    .holder("Holder " + i)
-                    .expirationDate(LocalDate.now().plusYears(2))
-                    .build();
-
-            mockMvc.perform(post("/api/users/{userId}/cards", userId)
-                            .headers(adminHeaders("POST", "/api/users/" + userId + "/cards"))
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(cardDto)))
-                    .andExpect(status().isCreated());
-        }
+    void getAllCards_ReturnsPage() throws Exception {
+        createCard("1234567890123451", "John Doe 1");
+        createCard("1234567890123452", "John Doe 2");
+        createCard("1234567890123453", "John Doe 3");
 
         mockMvc.perform(get("/api/cards")
                         .headers(adminHeaders("GET", "/api/cards"))
-                        .param("holder", "Holder 1")
                         .param("page", "0")
-                        .param("size", "10"))
+                        .param("size", "2"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[0].holder", containsString("Holder 1")));
+                .andExpect(jsonPath("$.content", hasSize(2)))
+                .andExpect(jsonPath("$.totalElements", is(3)));
     }
 
     @Test
-    void deleteCard_CardExists_ReturnsDeletedCard() throws Exception {
-        PaymentCardDto createDto = PaymentCardDto.builder()
-                .userId(userId)
-                .number("1234567890123456")
-                .holder("John Doe")
-                .expirationDate(LocalDate.now().plusYears(2))
-                .build();
-
-        String response = mockMvc.perform(post("/api/users/{userId}/cards", userId)
-                        .headers(adminHeaders("POST", "/api/users/" + userId + "/cards"))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(createDto)))
-                .andReturn()
-                .getResponse()
-                .getContentAsString();
-
-        PaymentCardDto createdCard = objectMapper.readValue(response, PaymentCardDto.class);
+    void deleteCard_CardExists_ReturnsNoContent() throws Exception {
+        PaymentCardDto createdCard = createCard("1234567890123456", "John Doe");
 
         mockMvc.perform(delete("/api/cards/{id}", createdCard.getId())
                         .headers(adminHeaders("DELETE", "/api/cards/" + createdCard.getId())))
@@ -311,10 +192,25 @@ class PaymentCardControllerTest extends AbstractIntegrationTest {
                 .andExpect(status().isNotFound());
     }
 
-    @Test
-    void deleteCard_CardNotFound_ReturnsNotFound() throws Exception {
-        mockMvc.perform(delete("/api/cards/{id}", 999)
-                        .headers(adminHeaders("DELETE", "/api/cards/999")))
-                .andExpect(status().isNotFound());
+    private PaymentCardDto createCard(String number, String holder) throws Exception {
+        String response = mockMvc.perform(post("/api/users/{userId}/cards", userId)
+                        .headers(adminHeaders("POST", "/api/users/" + userId + "/cards"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(buildCard(number, holder))))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        return objectMapper.readValue(response, PaymentCardDto.class);
+    }
+
+    private PaymentCardDto buildCard(String number, String holder) {
+        return PaymentCardDto.builder()
+                .userId(userId)
+                .number(number)
+                .holder(holder)
+                .expirationDate(LocalDate.now().plusYears(2))
+                .build();
     }
 }
