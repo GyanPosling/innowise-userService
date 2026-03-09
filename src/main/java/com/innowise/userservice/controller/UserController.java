@@ -5,7 +5,6 @@ import com.innowise.userservice.model.dto.InternalUserCreateRequest;
 import com.innowise.userservice.model.dto.UserDto;
 import com.innowise.userservice.security.SecurityUtil;
 import com.innowise.userservice.service.UserService;
-import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -38,7 +37,7 @@ public class UserController implements UserControllerApi {
     @PostMapping
     @PreAuthorize("isAuthenticated()")
     @Override
-    public ResponseEntity<UserDto> createUser(@Valid @RequestBody UserDto userDTO) {
+    public ResponseEntity<UserDto> createUser(@RequestBody UserDto userDTO) {
         userDTO.setId(securityUtil.getAuthenticatedUserId());
         userDTO.setEmail(securityUtil.getAuthenticatedEmail());
         UserDto createdUser = userService.createUser(userDTO);
@@ -48,8 +47,7 @@ public class UserController implements UserControllerApi {
     @PostMapping("/internal")
     @PreAuthorize("@securityUtil.isInternalRequest()")
     @Override
-    public ResponseEntity<Void> createInternalUser(
-            @Valid @RequestBody InternalUserCreateRequest request) {
+    public ResponseEntity<Void> createInternalUser(@RequestBody InternalUserCreateRequest request) {
         userService.createUser(UserDto.builder()
                 .id(request.getId())
                 .name(request.getName())
@@ -103,8 +101,7 @@ public class UserController implements UserControllerApi {
     @Override
     public ResponseEntity<UserDto> updateUser(
             @PathVariable UUID id,
-
-            @Valid @RequestBody UserDto userDTO) {
+            @RequestBody UserDto userDTO) {
         UserDto updatedUser = userService.updateUser(id, userDTO);
         return ResponseEntity.ok(updatedUser);
     }

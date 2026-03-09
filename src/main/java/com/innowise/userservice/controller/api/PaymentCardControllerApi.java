@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
@@ -31,6 +32,7 @@ public interface PaymentCardControllerApi {
     })
     ResponseEntity<PaymentCardDto> createCard(
             @Parameter(description = "User id") UUID userId,
+            @Valid
             @RequestBody(required = true, description = "Card payload",
                     content = @Content(schema = @Schema(implementation = PaymentCardDto.class)))
             PaymentCardDto paymentCardDTO);
@@ -73,6 +75,7 @@ public interface PaymentCardControllerApi {
     })
     ResponseEntity<PaymentCardDto> updateCard(
             @Parameter(description = "Card id") Integer id,
+            @Valid
             @RequestBody(required = true, description = "Updated card payload",
                     content = @Content(schema = @Schema(implementation = PaymentCardDto.class)))
             PaymentCardDto paymentCardDTO);

@@ -4,7 +4,6 @@ import com.innowise.userservice.controller.api.PaymentCardControllerApi;
 import com.innowise.userservice.model.dto.PaymentCardDto;
 import com.innowise.userservice.security.SecurityUtil;
 import com.innowise.userservice.service.PaymentCardService;
-import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -39,7 +38,7 @@ public class PaymentCardController implements PaymentCardControllerApi {
     @Override
     public ResponseEntity<PaymentCardDto> createCard(
             @PathVariable UUID userId,
-            @Valid @RequestBody PaymentCardDto paymentCardDTO) {
+            @RequestBody PaymentCardDto paymentCardDTO) {
         PaymentCardDto createdCard = paymentCardService.createCard(userId, paymentCardDTO);
         return new ResponseEntity<>(createdCard, HttpStatus.CREATED);
     }
@@ -77,7 +76,7 @@ public class PaymentCardController implements PaymentCardControllerApi {
     @Override
     public ResponseEntity<PaymentCardDto> updateCard(
             @PathVariable Integer id,
-            @Valid @RequestBody PaymentCardDto paymentCardDTO) {
+            @RequestBody PaymentCardDto paymentCardDTO) {
         PaymentCardDto updatedCard = paymentCardService.updateCard(id, paymentCardDTO);
         return ResponseEntity.ok(updatedCard);
     }

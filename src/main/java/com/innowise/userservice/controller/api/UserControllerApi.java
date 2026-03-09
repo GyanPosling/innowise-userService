@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
@@ -31,6 +32,7 @@ public interface UserControllerApi {
             @ApiResponse(responseCode = "409", description = "User already exists")
     })
     ResponseEntity<UserDto> createUser(
+            @Valid
             @RequestBody(required = true, description = "User payload",
                     content = @Content(schema = @Schema(implementation = UserDto.class)))
             UserDto userDTO);
@@ -42,6 +44,7 @@ public interface UserControllerApi {
             @ApiResponse(responseCode = "403", description = "Forbidden")
     })
     ResponseEntity<Void> createInternalUser(
+            @Valid
             @RequestBody(required = true, description = "Internal user payload",
                     content = @Content(schema = @Schema(implementation = InternalUserCreateRequest.class)))
             InternalUserCreateRequest request);
@@ -96,6 +99,7 @@ public interface UserControllerApi {
     })
     ResponseEntity<UserDto> updateUser(
             @Parameter(description = "User id") UUID id,
+            @Valid
             @RequestBody(required = true, description = "Updated user payload",
                     content = @Content(schema = @Schema(implementation = UserDto.class)))
             UserDto userDTO);
