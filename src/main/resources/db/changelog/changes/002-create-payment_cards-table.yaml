@@ -25,7 +25,7 @@ databaseChangeLog:
                   defaultValueComputed: CURRENT_TIMESTAMP
               - column:
                   name: user_id
-                  type: INTEGER
+                  type: UUID
                   constraints:
                     nullable: false
               - column:

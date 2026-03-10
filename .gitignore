@@ -27,3 +27,6 @@ build/
 !**/src/test/**/build/
 
 .vscode/
+.env
+.env.*
+!.env.example

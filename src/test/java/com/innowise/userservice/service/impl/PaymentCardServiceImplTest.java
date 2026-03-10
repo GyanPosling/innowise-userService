@@ -29,6 +29,7 @@ import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -43,6 +44,8 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class PaymentCardServiceImplTest {
+
+    private static final UUID USER_ID = UUID.randomUUID();
 
     @Mock
     private PaymentCardRepository paymentCardRepository;
@@ -73,14 +76,14 @@ class PaymentCardServiceImplTest {
     @BeforeEach
     void setUp() {
         user = User.builder()
-                .id(1)
+                .id(USER_ID)
                 .name("John")
                 .surname("Doe")
                 .email("john.doe@example.com")
                 .build();
 
         userDto = UserDto.builder()
-                .id(1)
+                .id(USER_ID)
                 .name("John")
                 .surname("Doe")
                 .email("john.doe@example.com")
@@ -97,7 +100,7 @@ class PaymentCardServiceImplTest {
 
         cardDto = PaymentCardDto.builder()
                 .id(1)
-                .userId(1)
+                .userId(USER_ID)
                 .number("1234567890123456")
                 .holder("John Doe")
                 .expirationDate(LocalDate.now().plusYears(2))
@@ -107,15 +110,15 @@ class PaymentCardServiceImplTest {
 
     @Test
     void createCard_Success() {
-        when(userService.getActiveCardCount(1)).thenReturn(3);
-        when(paymentCardRepository.existsByUserIdAndCardNumber(1, cardDto.getNumber())).thenReturn(false);
-        when(userService.getUserById(1)).thenReturn(userDto);
+        when(userService.getActiveCardCount(USER_ID)).thenReturn(3);
+        when(paymentCardRepository.existsByUserIdAndCardNumber(USER_ID, cardDto.getNumber())).thenReturn(false);
+        when(userService.getUserById(USER_ID)).thenReturn(userDto);
         when(userMapper.toEntity(userDto)).thenReturn(user);
         when(paymentCardMapper.toEntity(cardDto)).thenReturn(card);
         when(paymentCardRepository.save(card)).thenReturn(card);
         when(paymentCardMapper.toDTO(card)).thenReturn(cardDto);
 
-        PaymentCardDto result = paymentCardService.createCard(1, cardDto);
+        PaymentCardDto result = paymentCardService.createCard(USER_ID, cardDto);
 
         assertNotNull(result);
         assertEquals(cardDto.getNumber(), result.getNumber());
@@ -124,20 +127,20 @@ class PaymentCardServiceImplTest {
 
     @Test
     void createCard_CardLimitExceeded_ThrowsException() {
-        when(userService.getActiveCardCount(1)).thenReturn(5);
+        when(userService.getActiveCardCount(USER_ID)).thenReturn(5);
 
         LimitExceededException exception = assertThrows(LimitExceededException.class,
-                () -> paymentCardService.createCard(1, cardDto));
+                () -> paymentCardService.createCard(USER_ID, cardDto));
         assertEquals("User cannot have more than 5 active cards", exception.getMessage());
     }
 
     @Test
     void createCard_DuplicateCardNumber_ThrowsException() {
-        when(userService.getActiveCardCount(1)).thenReturn(3);
-        when(paymentCardRepository.existsByUserIdAndCardNumber(1, cardDto.getNumber())).thenReturn(true);
+        when(userService.getActiveCardCount(USER_ID)).thenReturn(3);
+        when(paymentCardRepository.existsByUserIdAndCardNumber(USER_ID, cardDto.getNumber())).thenReturn(true);
 
         ValidationException exception = assertThrows(ValidationException.class,
-                () -> paymentCardService.createCard(1, cardDto));
+                () -> paymentCardService.createCard(USER_ID, cardDto));
         assertEquals("Card with this number already exists for this user", exception.getMessage());
     }
 
@@ -180,14 +183,14 @@ class PaymentCardServiceImplTest {
     @Test
     void getCardsByUserId_Success() {
         List<PaymentCard> cards = Collections.singletonList(card);
-        when(paymentCardRepository.findByUserId(1)).thenReturn(cards);
+        when(paymentCardRepository.findByUserId(USER_ID)).thenReturn(cards);
         when(paymentCardMapper.toDTO(card)).thenReturn(cardDto);
 
-        List<PaymentCardDto> result = paymentCardService.getCardsByUserId(1);
+        List<PaymentCardDto> result = paymentCardService.getCardsByUserId(USER_ID);
 
         assertNotNull(result);
         assertEquals(1, result.size());
-        verify(paymentCardRepository).findByUserId(1);
+        verify(paymentCardRepository).findByUserId(USER_ID);
     }
 
     @Test
@@ -245,7 +248,7 @@ class PaymentCardServiceImplTest {
 
     @Test
     void deleteCard_Success() {
-        when(paymentCardRepository.findUserIdByCardId(1)).thenReturn(Optional.of(1));
+        when(paymentCardRepository.findUserIdByCardId(1)).thenReturn(Optional.of(USER_ID));
 
         paymentCardService.deleteCard(1);
 

@@ -1,8 +1,8 @@
 package com.innowise.userservice.model.dto;
 
-import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Past;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
@@ -16,8 +16,9 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class UserDto {
-    @Schema(accessMode = Schema.AccessMode.READ_ONLY)
+public class InternalUserCreateRequest {
+
+    @NotNull(message = "User id is required")
     private UUID id;
 
     @NotBlank(message = "Name is required")
@@ -35,6 +36,4 @@ public class UserDto {
     @Email(message = "Email must be valid")
     @Size(max = 100, message = "Email must not exceed 100 characters")
     private String email;
-
-    private boolean active;
 }

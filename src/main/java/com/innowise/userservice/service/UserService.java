@@ -1,11 +1,11 @@
 package com.innowise.userservice.service;
 
 import com.innowise.userservice.model.dto.UserDto;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-
 import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 /**
  * Service API for managing users.
@@ -13,7 +13,7 @@ import java.util.List;
 public interface UserService {
 
     /**
-     * Creates a new user.
+     * Creates a user.
      *
      * @param userDTO user data
      * @return created user
@@ -26,7 +26,7 @@ public interface UserService {
      * @param id user id
      * @return user
      */
-    UserDto getUserById(Integer id);
+    UserDto getUserById(UUID id);
 
     /**
      * Retrieves a user by email.
@@ -61,7 +61,7 @@ public interface UserService {
      * @param userDTO user data
      * @return updated user
      */
-    UserDto updateUser(Integer id, UserDto userDTO);
+    UserDto updateUser(UUID id, UserDto userDTO);
 
     /**
      * Toggles user active status.
@@ -69,7 +69,7 @@ public interface UserService {
      * @param id user id
      * @return updated user
      */
-    UserDto toggleUserStatus(Integer id);
+    UserDto toggleUserStatus(UUID id);
 
     /**
      * Counts active cards for a user.
@@ -77,12 +77,12 @@ public interface UserService {
      * @param userId user id
      * @return active card count
      */
-    int getActiveCardCount(Integer userId);
+    int getActiveCardCount(UUID userId);
 
     /**
      * Deletes a user by id.
      *
      * @param id user id
      */
-    void deleteUser(Integer id);
+    void deleteUser(UUID id);
 }
