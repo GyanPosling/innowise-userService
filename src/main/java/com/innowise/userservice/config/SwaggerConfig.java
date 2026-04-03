@@ -30,7 +30,7 @@ public class SwaggerConfig {
     public OpenAPI openAPI() {
         Server server = new Server()
                 .url(appUrl)
-                .description("Local Server");
+                .description("Public Gateway URL");
 
         Contact contact = new Contact()
                 .name("User Service API")
